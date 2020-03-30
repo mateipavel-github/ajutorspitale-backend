@@ -3,7 +3,8 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Log;
+use App\Http\Resources\HelpRequestChange as HelpRequestChangeResource;
+use App\Http\Resources\User as UserResource;
 
 class HelpRequest extends JsonResource
 {
@@ -17,7 +18,15 @@ class HelpRequest extends JsonResource
     {
         return [
             'id' => $this -> id,
-            'needs' => HelpRequestNeed::collection($this -> whenLoaded('needs'))
+            'name'=> $this -> name,
+            'phone_number' => $this -> phone_number,
+            'job_title' => $this -> job_title,
+            'medical_unit_type_id' => $this -> medical_unit_type_id,
+            'medical_unit_name' => $this -> medical_unit_name,
+            'current_needs' => $this -> current_needs,
+            'changes' => HelpRequestChangeResource::collection($this -> whenLoaded('changes')),
+            'extra_info' => $this -> extra_info,
+            'assigned_user' => new UserResource($this -> whenLoaded('assigned_user'))
         ];
 
     }

@@ -14,7 +14,8 @@ class FirstSeeder extends Seeder
         //create metadata
         $this -> medicalUnitTypes();
         $this -> counties();
-        $this -> needs();
+        $this -> needTypes();
+        $this -> changeTypes();
 
         //create admin user
         DB::table('users')->insert([
@@ -38,19 +39,35 @@ class FirstSeeder extends Seeder
         ]);
 
         //create requests
-        $requestId = DB::table('help_requests')->insertGetId([
+        $requestId = DB::table('help_requests')->insertGetId($originalRequestData = [
             'user_id' => $doctorId,
-            'user_phone_number' => '+40722278567',
-            'user_job_title' => 'Șef de secție ATI',
-            'medical_unit_name' => 'Spitalul de Urgențe Floreasca'
+            'name' => 'Domnul Doctor',
+            'phone_number' => '+40722278567',
+            'job_title' => 'Șef de secție ATI',
+            'medical_unit_name' => 'Spitalul de Urgențe Floreasca',
+            'medical_unit_type_id' => 1,
+            'assigned_user_id' => $volunteerId
         ]);
 
-        //create request needs
-        $needs = DB::table('metadata_needs')->get();
-        foreach($needs as $need) {
-            DB::table('help_request_needs')->insert([
-                'help_request_id' => $requestId,
-                'need_id' => $need -> id,
+        $originalRequestData['needs'] = true;
+
+        //create request change
+        $requestChangeId = DB::table('help_request_changes')->insertGetId([
+            'help_request_id' => $requestId,
+            'changes' => json_encode($originalRequestData),
+            'user_id' => $volunteerId,
+            'user_comment' => 'first entry',
+            'status' => 'final',
+            'change_type_id' => 1,
+            'created_at' => date('Y-m-d H:i:s')
+        ]);
+
+        //create request change needs
+        $need_types = DB::table('metadata_need_types')->get();
+        foreach($need_types as $need_type) {
+            DB::table('help_request_change_needs')->insert([
+                'help_request_change_id' => $requestChangeId,
+                'need_type_id' => $need_type -> id,
                 'quantity' => Arr::random([12000,15000,10,300,200])
             ]);
         }
@@ -59,10 +76,23 @@ class FirstSeeder extends Seeder
 
     public function medicalUnitTypes() {
 
-        $list = ['spital județean de stat', 'spital judetean de stat', 'alt fel de spital de stat (maternitate; cu o anumită specializare; etc)', 'spital privat', 'direcția ambulanțe', 'medic de familie'];
+        $list = ['spital județean de stat', 'spital orășenesc de stat', 'alt fel de spital de stat (maternitate; cu o anumită specializare; etc)', 'spital privat', 'direcția ambulanțe', 'medic de familie'];
 
         foreach($list as $item) {
             DB::table('metadata_medical_unit_types')->insert([
+                'label' => $item,
+                'status' => 'active'
+            ]);
+        }
+
+    }
+
+    public function changeTypes() {
+
+        $list = ['Delivery','Typo','Update by solicitor','Update by volunteer at the request of solicitor'];
+
+        foreach($list as $item) {
+            DB::table('metadata_change_types')->insert([
                 'label' => $item,
                 'status' => 'active'
             ]);
@@ -83,11 +113,11 @@ class FirstSeeder extends Seeder
 
     }
 
-    public function needs() {
+    public function needTypes() {
 
         $list = ['Hârtie igienică', 'Măști FPP2', 'Măști FPP3', 'Mănuși'];
         foreach($list as $item) {
-            DB::table('metadata_needs')->insert([
+            DB::table('metadata_need_types')->insert([
                 'label' => $item,
                 'status' => 'active'
             ]);

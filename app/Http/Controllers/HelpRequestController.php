@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\HelpRequest;
 use App\Http\Resources\HelpRequestCollection;
+use \App\Http\Resources\HelpRequest as HelpRequestResource;
 
 class HelpRequestController extends Controller
 {
@@ -16,9 +17,7 @@ class HelpRequestController extends Controller
     public function index(Request $request)
     {
 
-
-        $list = HelpRequest::with('needs')->get();
-
+        $list = HelpRequest::with('assigned_user')->get();
         return new HelpRequestCollection($list);
 
     }
@@ -40,9 +39,9 @@ class HelpRequestController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show(Request $request, $id)
     {
-        //
+        return new HelpRequestResource(HelpRequest::with(['changes','changes.needs','assigned_user'])->find($id));
     }
 
     /**
