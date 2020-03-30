@@ -26,8 +26,10 @@ class AuthServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->registerPolicies();
-        $role_type_scopes = Role::all()->pluck('label', 'label')->toArray();
-        Passport::tokensCan($role_type_scopes);
+        /*$role_type_scopes = Role::all()->pluck('label', 'label')->toArray();
+        if(!empty($role_type_scopes)){
+            Passport::tokensCan($role_type_scopes);
+        }*/
 
         Passport::routes();
     }
