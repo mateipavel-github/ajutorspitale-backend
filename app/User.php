@@ -40,6 +40,6 @@ class User extends Authenticatable
 
     public function role()
     {
-        return $this->hasOne('App\Role', 'id', 'role_type_id');
+        return $this->hasOne('App\MetadataUserRoleType', 'id', 'role_type_id');
     }
 }

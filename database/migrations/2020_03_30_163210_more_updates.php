@@ -15,7 +15,7 @@ class MoreUpdates extends Migration
     {
         //
         Schema::table('help_requests', function (Blueprint $table) {
-            $table->string('needs_text');
+            $table->string('needs_text')->nullable();
         });
     }
 

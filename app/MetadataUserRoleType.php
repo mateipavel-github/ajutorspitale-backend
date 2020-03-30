@@ -4,7 +4,7 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Role extends Model
+class MetadataUserRoleType extends Model
 {
     protected $table = "metadata_user_role_types";
 

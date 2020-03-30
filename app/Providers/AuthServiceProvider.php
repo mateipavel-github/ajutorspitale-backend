@@ -2,7 +2,7 @@
 
 namespace App\Providers;
 
-use App\Role;
+use App\MetadataUserRoleType;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Laravel\Passport\Passport;
 use Illuminate\Support\Facades\Schema;
@@ -28,8 +28,8 @@ class AuthServiceProvider extends ServiceProvider
     {
         $this->registerPolicies();
 
-        if (Schema::hasTable((new Role())->getTable())) {
-            $role_type_scopes = Role::all()->pluck('label', 'label')->toArray();
+        if (Schema::hasTable((new MetadataUserRoleType())->getTable())) {
+            $role_type_scopes = MetadataUserRoleType::all()->pluck('label', 'label')->toArray();
             if (!empty($role_type_scopes)) {
                 Passport::tokensCan($role_type_scopes);
             }
