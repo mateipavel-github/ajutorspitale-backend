@@ -4,8 +4,9 @@ namespace App\Providers;
 
 use App\Role;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
-use Illuminate\Support\Facades\Gate;
 use Laravel\Passport\Passport;
+use Illuminate\Support\Facades\Schema;
+
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -26,10 +27,13 @@ class AuthServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->registerPolicies();
-        /*$role_type_scopes = Role::all()->pluck('label', 'label')->toArray();
-        if(!empty($role_type_scopes)){
-            Passport::tokensCan($role_type_scopes);
-        }*/
+
+        if (Schema::hasTable((new Role())->getTable())) {
+            $role_type_scopes = Role::all()->pluck('label', 'label')->toArray();
+            if (!empty($role_type_scopes)) {
+                Passport::tokensCan($role_type_scopes);
+            }
+        }
 
         Passport::routes();
     }
