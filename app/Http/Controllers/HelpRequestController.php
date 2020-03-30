@@ -30,7 +30,27 @@ class HelpRequestController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $data = $request->post();
+
+        //create new change
+        $hr = new HelpRequest;
+        $hr->name = $data['name'];
+        $hr->job_title = $data['job_title'];
+        $hr->phone_number = $data['phone_number'];
+        $hr->medical_unit_type_id = $data['medical_unit_type_id'];
+        $hr->medical_unit_name = $data['medical_unit_name'];
+        $hr->needs_text = $data['needs_text'];
+        $hr->extra_info = $data['extra_info'];
+        $hr->user_id = Auth::check() ? Auth::user()->id : 1;
+
+        $hr->save();
+
+        // return the new request so that the angular app can reload
+        return [
+            'success' => true,
+            'newHelpRequest' => new HelpRequestResource(HelpRequest::with(['changes','changes.needs','assigned_user'])->find($hr->id))
+        ];
+
     }
 
     /**
