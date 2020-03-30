@@ -35,6 +35,7 @@ class LoginController extends Controller
             "data" => [
                 'access_token' => $token,
                 'user' => [
+                    "id" => Auth::user()->id,
                     "name" => Auth::user()->name,
                     "email" => Auth::user()->email
                 ]
