@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Route;
 
 //Route::get('/requests', 'RequestController');
 Route::apiResource('requests', 'HelpRequestController');
+Route::apiResource('changeRequests', 'HelpRequestChangeController');
 
 Route::apiResource('metadata', 'MetadataController');
 

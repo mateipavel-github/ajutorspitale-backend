@@ -6,6 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class HelpRequestChange extends Model
 {
+
+    protected $casts = [
+        'changes' => 'array',
+    ];
+
     //
     public function needs()
     {
@@ -20,7 +25,7 @@ class HelpRequestChange extends Model
         return $this -> hasOne('App\MetadataChangeType');
     }
 
-    public function Delivery() {
+    public function delivery() {
         return $this->belongsTo('App\Delivery');
     }
 }
