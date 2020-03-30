@@ -14,11 +14,14 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-//Route::get('/requests', 'RequestController');
-Route::apiResource('requests', 'HelpRequestController');
-Route::apiResource('changeRequests', 'HelpRequestChangeController');
+Route::post('/user/login', 'api\v1\LoginController@login');
 
-Route::apiResource('metadata', 'MetadataController');
+//Route::get('/requests', 'RequestController');
+Route::middleware("auth:api")->apiResource('requests', 'HelpRequestController');
+Route::middleware("auth:api")->apiResource('changeRequests', 'HelpRequestChangeController');
+
+Route::middleware("auth:api")->apiResource('metadata', 'MetadataController');
+
 
 /*
 Route::middleware('auth:api')->get('/requests', function (Request $request) {
