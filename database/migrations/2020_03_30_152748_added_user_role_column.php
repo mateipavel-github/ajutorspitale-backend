@@ -15,8 +15,8 @@ class AddedUserRoleColumn extends Migration
     {
         //
         Schema::table("users", function (Blueprint $table) {
-            $table->integer("role_type_id")->unsigned()->default(2);
-            $table->foreign('role_type_id')->references('id')->on('metadata_user_role_types')->onDelete('restrict');
+            $table->integer('role_type_id')->unsigned()->default(2);
+            //$table->foreign('role_type_id')->references('id')->on('metadata_user_role_types')->onDelete('restrict');
         });
     }
 
@@ -28,7 +28,7 @@ class AddedUserRoleColumn extends Migration
     public function down()
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropForeign('users_role_type_id_foreign');
+            //$table->dropForeign('users_role_type_id_foreign');
             $table->dropColumn("role_type_id");
         });
     }
