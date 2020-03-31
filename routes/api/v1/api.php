@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/user/login', 'Api\v1\LoginController@login');
 
-Route::middleware("auth:api")->apiResource('requests', 'Api\v1\HelpRequestController');
+Route::apiResource('requests', 'Api\v1\HelpRequestController');
 Route::middleware("auth:api")->post('requests/mass-assign-to-user', 'Api\v1\HelpRequestController@massAssignToCurrentUser');
 Route::middleware("auth:api")->apiResource('changeRequests', 'Api\v1\HelpRequestChangeController');
 
