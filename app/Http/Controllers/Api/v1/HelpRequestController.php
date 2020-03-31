@@ -26,9 +26,9 @@ class HelpRequestController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return HelpRequestCollection
      */
-    public function index(Request $request)
+    public function index()
     {
 
         $list = HelpRequest::with('assigned_user')->get();
@@ -39,8 +39,8 @@ class HelpRequestController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @return array
      */
     public function store(Request $request)
     {
@@ -82,7 +82,7 @@ class HelpRequestController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param Request $request
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */

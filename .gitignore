@@ -4,6 +4,7 @@
 /public/pmya
 /storage/*.key
 /vendor
+.idea
 .env
 .env.backup
 .env.heroku
