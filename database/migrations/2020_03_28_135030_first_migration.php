@@ -24,7 +24,7 @@ class FirstMigration extends Migration
             $table->id();
             $table->timestamps();
             $table->integer('user_id');
-            $table->integer('assigned_user_id');
+            $table->integer('assigned_user_id')->nullable();
             $table->integer('medical_unit_id')->nullable();
             $table->integer('medical_unit_type_id')->nullable();
             $table->string('medical_unit_name')->nullable();

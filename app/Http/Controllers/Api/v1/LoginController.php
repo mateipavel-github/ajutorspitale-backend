@@ -16,16 +16,21 @@ class LoginController extends Controller
      */
     public function login(Request $request)
     {
+
+        $login = request()->input('login_identifier');
+        $field = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone_number';
+        request()->merge([$field => $login]);
+
         $login = $request->validate([
-            "email" => "required|string",
-            "password" => "required|string"
+            $field => 'required|string',
+            'password' => 'required|string'
         ]);
 
         if (!Auth::attempt($login)) {
             return response()->json([
                 "message" => __("Invalid credentials"),
                 "data" => [],
-                "result" => "error"
+                'success' => false
             ]);
         }
         $current_user = Auth::user();
@@ -40,7 +45,8 @@ class LoginController extends Controller
                     "email" => Auth::user()->email
                 ]
             ],
-            "result" => "error"
+            'success' => true
         ]);
     }
+
 }

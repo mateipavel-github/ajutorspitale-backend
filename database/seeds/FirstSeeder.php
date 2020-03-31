@@ -21,6 +21,7 @@ class FirstSeeder extends Seeder
         DB::table('users')->insert([
             'name' => 'admin',
             'email' => 'matei+admin@konk-media.com',
+            'phone_number' => '0722278567',
             'password' => Hash::make('password'),
         ]);
 
@@ -28,6 +29,7 @@ class FirstSeeder extends Seeder
         $doctorId = DB::table('users')->insertGetId([
             'name' => 'doctor',
             'email' => 'matei+doctor@konk-media.com',
+            'phone_number' => '0729964694',
             'password' => Hash::make('password'),
         ]);
 

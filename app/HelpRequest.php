@@ -3,9 +3,13 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
 
 class HelpRequest extends Model
 {
+
+    protected $fillable = ['assigned_user_id'];
+
     //
     public function changes()
     {
@@ -20,30 +24,33 @@ class HelpRequest extends Model
         return $this->hasOne('App\MetadataMedicalUnitType');
     }
 
-    /*
-    public function save($change_type_id, $needs=[]) {
+    public function saveWithChanges($changeData, $needs=[]) {
 
-        $changes = $this -> getChanges();
+        $changes = isset($changeData['changes']) ? $changeData['changes'] : $this -> getChanges();
 
-        $rc = new HelpRequestChange;
-        $rc->change_type_id=$change_type_id;
-        $rc->help_request_id = $this->id;
-        $rc->changes = $changes;
-        $rc->save();
+        Log::debug('mateo: '.json_encode($this->getChanges()));
 
-        // add needs
-        /*
-        if(isset($data['needs']) && !empty($data['needs'])) {
-            foreach($data['needs'] as $need) {
-                $rc->needs()->create([
-                    'need_type_id' => $need['need_type_id'],
-                    'quantity' => $need['quantity']
-                ])->save();
+        if(!empty($changes)) {
+
+            $result = $this->save();
+
+            $rc = new HelpRequestChange;
+            $rc->help_request_id = $this->id;
+            $rc->change_type_id = $changeData['change_type_id'];
+            $rc->user_comment = isset($changeData['user_comment']) ? $changeData['user_comment'] : null;
+            $rc->changes = $changes;
+            $rc->save();
+
+            if (isset($needs) && !empty($needs)) {
+                foreach ($needs as $need) {
+                    $rc->needs()->create([
+                        'need_type_id' => $need['need_type_id'],
+                        'quantity' => $need['quantity']
+                    ])->save();
+                }
             }
+
+            return $result;
         }
-
-        parent::save();
     }
-    */
-
 }

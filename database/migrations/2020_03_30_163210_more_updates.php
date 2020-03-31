@@ -17,6 +17,10 @@ class MoreUpdates extends Migration
         Schema::table('help_requests', function (Blueprint $table) {
             $table->string('needs_text')->nullable();
         });
+
+        Schema::table("users", function (Blueprint $table) {
+            $table->string('phone_number')->unique()->nullable();
+        });
     }
 
     /**
@@ -29,6 +33,10 @@ class MoreUpdates extends Migration
         //
         Schema::table('help_requests', function (Blueprint $table) {
             $table->dropColumn('needs_text');
+        });
+
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn('phone_number');
         });
     }
 }

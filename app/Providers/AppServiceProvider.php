@@ -24,7 +24,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot()
     {
 
-        if(env('DEBUG_SQL', true)) {
+        if(env('DEBUG_SQL', false)) {
             \DB::listen(function ($query) {
                 \Log::info(
                     '[SQL]: '.$query->sql,

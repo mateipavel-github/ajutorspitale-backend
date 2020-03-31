@@ -42,4 +42,9 @@ class User extends Authenticatable
     {
         return $this->hasOne('App\MetadataUserRoleType', 'id', 'role_type_id');
     }
+
+    public function findForPassport($username)
+    {
+        return $this->where('phone_number', $username)->orWhere('email', $username)->first();
+    }
 }

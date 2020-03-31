@@ -7,9 +7,22 @@ use Illuminate\Http\Request;
 use App\HelpRequest;
 use App\Http\Resources\HelpRequestCollection;
 use \App\Http\Resources\HelpRequest as HelpRequestResource;
+use Illuminate\Support\Facades\Auth;
+use App\Http\Resources\User as UserResource;
 
 class HelpRequestController extends Controller
 {
+
+    public function massAssignToCurrentUser(Request $request) {
+        $howMany = $request->post('howMany');
+        $userId = Auth::user()->id;
+
+        $requestIds  = HelpRequest::whereIn('status', [1,2])->whereNull('assigned_user_id')->pluck('id')->take($howMany);
+        HelpRequest::whereIn('id', $requestIds)->update(array('assigned_user_id' => $userId));
+
+        return ['success'=>true];
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -33,8 +46,9 @@ class HelpRequestController extends Controller
     {
         $data = $request->post();
 
-        //create new change
+        //create new request
         $hr = new HelpRequest;
+
         $hr->name = $data['name'];
         $hr->job_title = $data['job_title'];
         $hr->phone_number = $data['phone_number'];
@@ -44,7 +58,7 @@ class HelpRequestController extends Controller
         $hr->extra_info = $data['extra_info'];
         $hr->user_id = Auth::check() ? Auth::user()->id : 1;
 
-        $hr->save();
+        $hr->saveWithChanges(['change_type_id'=>1, 'changes'=>$hr->toArray()]);
 
         // return the new request so that the angular app can reload
         return [
@@ -74,7 +88,25 @@ class HelpRequestController extends Controller
      */
     public function update(Request $request, $id)
     {
-        //
+        $action = $request->get('action');
+
+        $currentUserId = Auth::user()->id;
+
+        $hr = HelpRequest::find($id);
+        switch($action) {
+            case 'assignCurrentUser':
+                $hr -> assigned_user_id = $currentUserId;
+                $return = [ 'assigned_user' => new UserResource(Auth::user()) ];
+                break;
+            case 'unassignCurrentUser':
+                $hr -> assigned_user_id = null;
+                $return = [ 'assigned_user' => null ];
+                break;
+        }
+
+        $hr->save();
+        $return['success'] = true;
+        return $return;
     }
 
     /**

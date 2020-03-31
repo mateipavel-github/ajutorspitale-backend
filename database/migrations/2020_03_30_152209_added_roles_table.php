@@ -18,14 +18,14 @@ class AddedRolesTable extends Migration
         Schema::create('metadata_user_role_types', function (Blueprint $table) {
             $table->charset = 'utf8';
             $table->collation = 'utf8_unicode_ci';
-            $table->increments("id");
+            $table->increments('id');
             $table->string('label', 64)->nullable();
         });
         DB::table('metadata_user_role_types')->insert([
-            ["label" => "Admin"],
-            ["label" => "Volunteer"],
-            ["label" => "Delivery agent"],
-            ["label" => "Requisitor"]
+            ['label' => 'Admin'],
+            ['label' => 'Volunteer'],
+            ['label' => 'Delivery agent'],
+            ['label' => 'Requisitor']
         ]);
     }
 
@@ -36,6 +36,6 @@ class AddedRolesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists("metadata_user_role_types");
+        Schema::dropIfExists('metadata_user_role_types');
     }
 }
