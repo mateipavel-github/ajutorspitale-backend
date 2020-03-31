@@ -4,6 +4,7 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
+use App\HelpRequestChange;
 
 class HelpRequest extends Model
 {
@@ -28,17 +29,18 @@ class HelpRequest extends Model
 
         $changes = isset($changeData['changes']) ? $changeData['changes'] : $this -> getChanges();
 
-        Log::debug('mateo: '.json_encode($this->getChanges()));
-
         if(!empty($changes)) {
 
             $result = $this->save();
 
-            $rc = new HelpRequestChange;
+            $rc = new HelpRequestChange();
             $rc->help_request_id = $this->id;
             $rc->change_type_id = $changeData['change_type_id'];
             $rc->user_comment = isset($changeData['user_comment']) ? $changeData['user_comment'] : null;
             $rc->changes = $changes;
+
+            Log::debug('mateo: '.json_encode($rc->changes));
+
             $rc->save();
 
             if (isset($needs) && !empty($needs)) {
