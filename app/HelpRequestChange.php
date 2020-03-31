@@ -8,7 +8,7 @@ class HelpRequestChange extends Model
 {
 
     protected $casts = [
-        'changes' => 'array',
+        'change_log' => 'array',
     ];
 
     //

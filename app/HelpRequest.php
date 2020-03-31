@@ -40,7 +40,6 @@ class HelpRequest extends Model
             $rc->change_type_id = $changeData['change_type_id'];
             $rc->user_comment = isset($changeData['user_comment']) ? $changeData['user_comment'] : null;
             $rc->change_log = $changes;
-            $rc->user_id = Auth::check() ? Auth::user()->id : 1;
 
             $rc->save();
 
