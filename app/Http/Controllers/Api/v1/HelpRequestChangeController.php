@@ -55,7 +55,7 @@ class HelpRequestChangeController extends Controller
         if(isset($data['needs']) && !empty($data['needs'])) {
             $changes['needs'] = true;
         }
-        $rc->changes = $changes;
+        $rc->change_log = $changes;
         $rc->save();
 
         //add needs

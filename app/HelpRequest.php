@@ -3,6 +3,7 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class HelpRequest extends Model
@@ -38,7 +39,9 @@ class HelpRequest extends Model
             $rc->help_request_id = $this->id;
             $rc->change_type_id = $changeData['change_type_id'];
             $rc->user_comment = isset($changeData['user_comment']) ? $changeData['user_comment'] : null;
-            $rc->changes = $changes;
+            $rc->change_log = $changes;
+            $rc->user_id = Auth::check() ? Auth::user()->id : 1;
+
             $rc->save();
 
             if (isset($needs) && !empty($needs)) {
