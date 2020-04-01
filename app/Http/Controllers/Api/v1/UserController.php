@@ -1,8 +1,11 @@
 <?php
 
-namespace App\Http\Controllers;
-
+namespace App\Http\Controllers\Api\v1;
+use App\Http\Controllers\Controller;
+use App\Http\Resources\User as UserResource;
 use Illuminate\Http\Request;
+use App\User;
+use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
@@ -13,7 +16,13 @@ class UserController extends Controller
      */
     public function index()
     {
-        //
+        return response()->json([
+            "data" => [
+                'items' => UserResource::collection(User::with('role')->get()),
+            ],
+            "message" => __("Got collection"),
+            "success" => true
+        ]);
     }
 
     /**
@@ -34,7 +43,30 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $u = new User();
+
+        $u -> name = $request -> post('name');
+        $u -> phone_number = $request -> post('phone_number');
+        $u -> email = $request -> post('email');
+        $u -> role_type_id = $request -> post('role_type_id');
+        $u -> password = $request -> post('password');
+
+        $success = $u -> save();
+
+        if($success) {
+            return response()->json([
+                "data" => [
+                    'item' => new UserResource($u)
+                ],
+                "message" => __("New user created"),
+                "success" => true
+            ]);
+        } else {
+            return response()->json([
+                "error" => __("Creation failed"),
+                "success" => false
+            ]);
+        }
     }
 
     /**
@@ -68,7 +100,32 @@ class UserController extends Controller
      */
     public function update(Request $request, $id)
     {
-        //
+        $u = User::find($id);
+
+        $u -> name = $request -> post('name');
+        $u -> phone_number = $request -> post('phone_number');
+        $u -> email = $request -> post('email');
+        $u -> role_type_id = $request -> post('role_type_id');
+        if($request->post('password')) {
+            $u -> password = Hash::make($request -> post('password'));  
+        }
+
+        $success = $u -> save();
+
+        if($success) {
+            return response()->json([
+                "data" => [
+                    'item' => new UserResource($u)
+                ],
+                "message" => __("User updated"),
+                "success" => true
+            ]);
+        } else {
+            return response()->json([
+                "error" => __("Update failed"),
+                "success" => false
+            ]);
+        }
     }
 
     /**
@@ -77,8 +134,21 @@ class UserController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function softDelete($id)
     {
-        //
+        $user = User::find($id);
+        $done = $user->delete();
+
+        if ($done) {
+            return response()->json([
+                'message' => __("Delete success"),
+                'success' => true
+            ]);
+        } else {
+            return response()->json([
+                "error" => __("Delete failed"),
+                "success" => false
+            ]);
+        }
     }
 }

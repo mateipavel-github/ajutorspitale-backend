@@ -6,8 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
+use Illuminate\Database\Eloquent\SoftDeletes;
+
 class HelpRequest extends Model
 {
+
+    use SoftDeletes;
 
     protected $fillable = ['assigned_user_id'];
 
