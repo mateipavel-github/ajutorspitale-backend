@@ -30,7 +30,8 @@ Route::put('requests', 'Api\v1\HelpRequestController@store');
 
 Route::middleware("auth:api")->post('requests/mass-assign-to-user', 'Api\v1\HelpRequestController@massAssignToCurrentUser');
 
-Route::middleware("auth:api")->apiResource('changeRequests', 'Api\v1\HelpRequestChangeController');
+Route::middleware("auth:api")->resource('changeRequests', 'Api\v1\HelpRequestChangeController', ['except' => ['store']]);
+Route::put('changeRequests', 'Api\v1\HelpRequestChangeController@store');
 
 Route::get('metadata', 'Api\v1\MetadataController@index');
 Route::middleware("auth:api")->put('metadata', 'Api\v1\MetadataController@store');

@@ -39,14 +39,25 @@ class MetadataController extends Controller
 
     public function store(Request $request) {
 
+        $type = 'App\\';
+
         switch($request->post('metadata_type')) {
-            case 'need_types': $t = new MetadataNeedType; break;
-            case 'counties': $t = new MetadataCounty; break;
-            case 'medical_unit_types': $t = new MetadataMedicalUnitType; break;
-            case 'change_types': $t = new MetadataChangeType; break;
-            case 'user_role_types': $t = new MetadataUserRoleType; break;
-            case 'request_status_types': $t = new MetadataRequestStatusType; break;
+            case 'need_types': $type .= 'MetadataNeedType'; break;
+            case 'counties': $type .= 'MetadataCounty'; break;
+            case 'medical_unit_types': $type .= 'MetadataMedicalUnitType'; break;
+            case 'change_types': $type .= 'MetadataChangeType'; break;
+            case 'user_role_types': $type .= 'MetadataUserRoleType'; break;
+            case 'request_status_types': $type .= 'MetadataRequestStatusType'; break;
             default: return ['success'=>false, 'error'=>'Metadata type not recognized']; break;
+        }
+
+        if($request -> post('id')) {
+            $t = call_user_func($type.'::find', $request -> post('id'));
+            if($new_id = $request->post('new_id')) {
+                $t -> id = $new_id;
+            }
+        } else {
+            $t = new $type;
         }
 
         $t->label = $request->post('label');
