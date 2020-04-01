@@ -42,7 +42,8 @@ class LoginController extends Controller
                 'user' => [
                     "id" => Auth::user()->id,
                     "name" => Auth::user()->name,
-                    "email" => Auth::user()->email
+                    "email" => Auth::user()->email,
+                    "role" => ['slug'=>Auth::user()->role->slug, 'id'=>Auth::user()->role->id]
                 ]
             ],
             'success' => true

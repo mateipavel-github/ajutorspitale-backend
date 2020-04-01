@@ -61,6 +61,13 @@ class MetadataController extends Controller
         }
 
         $t->label = $request->post('label');
+
+        $typesWithSlug = ['user_role_types', 'change_types'];
+
+        if(in_array($request->post('metadata_type'), $typesWithSlug)) {
+            $t->slug = $request->post('slug');
+        }
+
         $t->status = 'active';
         if($t->save()) {
             return [
@@ -69,7 +76,8 @@ class MetadataController extends Controller
                     'metadata_type'=>$request->post('metadata_type'),
                     'new_item'=> [
                         'id'=>$t->id,
-                        'label'=>$t->label
+                        'label'=>$t->label,
+                        'slug'=>$t->slug
                     ]
                 ]
             ];

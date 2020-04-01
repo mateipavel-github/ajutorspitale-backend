@@ -36,6 +36,7 @@ class HelpRequestController extends Controller
      */
     public function index(Request $request)
     {
+        
         $list = HelpRequest::select("*");
         if ($request->get("per_page")) {
             $this->per_page = $request->get('per_page');
@@ -156,6 +157,9 @@ class HelpRequestController extends Controller
 
         $hr = HelpRequest::find($id);
         switch ($action) {
+            case 'changeStatus':
+                $hr->status = $request->post('status');
+                break;
             case 'assignCurrentUser':
                 $hr->assigned_user_id = $request->user('api')->id;
                 $return = ['assigned_user' => new UserResource(Auth::user())];
