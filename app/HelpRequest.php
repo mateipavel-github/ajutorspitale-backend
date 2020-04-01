@@ -29,8 +29,6 @@ class HelpRequest extends Model
 
         $changes = isset($changeData['changes']) ? $changeData['changes'] : $this -> getChanges();
 
-        Log::debug('mateo: '.json_encode($this->getChanges()));
-
         if(!empty($changes)) {
 
             $result = $this->save();
@@ -40,7 +38,7 @@ class HelpRequest extends Model
             $rc->change_type_id = $changeData['change_type_id'];
             $rc->user_comment = isset($changeData['user_comment']) ? $changeData['user_comment'] : null;
             $rc->change_log = $changes;
-            $rc->user_id = Auth::check() ? Auth::user()->id : null;
+            $rc->user_id = isset($this->user_id) ? $this->user_id : null;
 
             $rc->save();
 

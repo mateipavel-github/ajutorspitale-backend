@@ -9,13 +9,14 @@ use App\Http\Resources\HelpRequestCollection;
 use \App\Http\Resources\HelpRequest as HelpRequestResource;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\User as UserResource;
+use Illuminate\Support\Facades\Log;
 
 class HelpRequestController extends Controller
 {
 
     public function massAssignToCurrentUser(Request $request) {
         $howMany = $request->post('howMany');
-        $userId = Auth::user()->id;
+        $userId = $request->user('api')->id;
 
         $requestIds  = HelpRequest::whereIn('status', [1,2])->whereNull('assigned_user_id')->pluck('id')->take($howMany);
         HelpRequest::whereIn('id', $requestIds)->update(array('assigned_user_id' => $userId));
@@ -56,7 +57,7 @@ class HelpRequestController extends Controller
         $hr->medical_unit_name = $data['medical_unit_name'];
         $hr->needs_text = $data['needs_text'];
         $hr->extra_info = $data['extra_info'];
-        $hr->user_id = Auth::check() ? Auth::user()->id : 1;
+        $hr->user_id = $request->user('api') ? $request->user('api')->id : null;
 
         $hr->saveWithChanges(['change_type_id'=>1, 'changes'=>$hr->toArray()]);
 
@@ -90,12 +91,10 @@ class HelpRequestController extends Controller
     {
         $action = $request->get('action');
 
-        $currentUserId = Auth::user()->id;
-
         $hr = HelpRequest::find($id);
         switch($action) {
             case 'assignCurrentUser':
-                $hr -> assigned_user_id = $currentUserId;
+                $hr -> assigned_user_id = $request->user('api')->id;
                 $return = [ 'assigned_user' => new UserResource(Auth::user()) ];
                 break;
             case 'unassignCurrentUser':
