@@ -62,7 +62,8 @@ class HelpRequestController extends Controller
         }
 
         if ($request->get("status")) {
-            $list->where(['status' => $request->get("status")]);
+            dd((array)$request->get("status"));
+            $list->whereIn('status', (array)$request->get("status"));
         }
 
         if ($request->get("medical_unit_name")) {
@@ -78,6 +79,7 @@ class HelpRequestController extends Controller
         }
 
         $list = $list->with('assigned_user')->paginate($this->per_page);
+        return $list;
         return response()->json([
             "data" => [
                 'items' => new HelpRequestCollection($list->items()),
