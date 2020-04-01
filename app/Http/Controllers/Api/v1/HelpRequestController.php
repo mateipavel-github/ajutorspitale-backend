@@ -1,8 +1,10 @@
 <?php
 
 namespace App\Http\Controllers\Api\V1;
+
 use App\Http\Controllers\Controller;
 
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\HelpRequest;
 use App\Http\Resources\HelpRequestCollection;
@@ -13,27 +15,78 @@ use Illuminate\Support\Facades\Log;
 
 class HelpRequestController extends Controller
 {
+    protected $per_page = 20;
 
-    public function massAssignToCurrentUser(Request $request) {
+    public function massAssignToCurrentUser(Request $request)
+    {
         $howMany = $request->post('howMany');
         $userId = $request->user('api')->id;
 
-        $requestIds  = HelpRequest::whereIn('status', [1,2])->whereNull('assigned_user_id')->pluck('id')->take($howMany);
+        $requestIds = HelpRequest::whereIn('status', [1, 2])->whereNull('assigned_user_id')->pluck('id')->take($howMany);
         HelpRequest::whereIn('id', $requestIds)->update(array('assigned_user_id' => $userId));
 
-        return ['success'=>true];
+        return ['success' => true];
     }
 
     /**
      * Display a listing of the resource.
      *
-     * @return HelpRequestCollection
+     * @param Request $request
+     * @return JsonResponse
      */
-    public function index()
+    public function index(Request $request)
     {
+        $list = HelpRequest::select("*");
+        if ($request->get("per_page")) {
+            $this->per_page = $request->get('per_page');
+        }
 
-        $list = HelpRequest::with('assigned_user')->get();
-        return new HelpRequestCollection($list);
+        if ($request->get("user_id")) {
+            $list->where(['user_id' => $request->get("user_id")]);
+        }
+
+        if ($request->get("assigned_user_id")) {
+            $list->where(['assigned_user_id' => $request->get("assigned_user_id")]);
+        }
+
+        if ($request->get("medical_unit_id")) {
+            $list->where(['medical_unit_id' => $request->get("medical_unit_id")]);
+        }
+
+        if ($request->get("medical_unit_type_id")) {
+            $list->where(['medical_unit_type_id' => $request->get("medical_unit_type_id")]);
+        }
+
+        if ($request->get("county_id")) {
+            $list->where(['county_id' => $request->get("county_id")]);
+        }
+
+        if ($request->get("status")) {
+            $list->where(['status' => $request->get("status")]);
+        }
+
+        if ($request->get("medical_unit_name")) {
+            $list->where('medical_unit_name', 'like', "%" . $request->get("medical_unit_name") . "%");
+        }
+
+        if ($request->get("name")) {
+            $list->where('name', 'like', "%" . $request->get("name") . "%");
+        }
+
+        if ($request->get("phone_number")) {
+            $list->where(['phone_number' => $request->get("phone_number")]);
+        }
+
+        $list = $list->with('assigned_user')->paginate($this->per_page);
+        return response()->json([
+            "data" => [
+                'items' => new HelpRequestCollection($list->items()),
+                'current_page' => $list->currentPage(),
+                'last_page' => $list->lastPage(),
+                'per_page' => $list->perPage(),
+                'total' => $list->total(),
+            ]
+        ]);
 
     }
 
@@ -59,12 +112,12 @@ class HelpRequestController extends Controller
         $hr->extra_info = $data['extra_info'];
         $hr->user_id = $request->user('api') ? $request->user('api')->id : null;
 
-        $hr->saveWithChanges(['change_type_id'=>1, 'changes'=>$hr->toArray()]);
+        $hr->saveWithChanges(['change_type_id' => 1, 'changes' => $hr->toArray()]);
 
         // return the new request so that the angular app can reload
         return [
             'success' => true,
-            'newHelpRequest' => new HelpRequestResource(HelpRequest::with(['changes','changes.needs','assigned_user'])->find($hr->id))
+            'newHelpRequest' => new HelpRequestResource(HelpRequest::with(['changes', 'changes.needs', 'assigned_user'])->find($hr->id))
         ];
 
     }
@@ -72,19 +125,19 @@ class HelpRequestController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  int  $id
+     * @param int $id
      * @return \Illuminate\Http\Response
      */
     public function show(Request $request, $id)
     {
-        return new HelpRequestResource(HelpRequest::with(['changes','changes.needs','assigned_user'])->find($id));
+        return new HelpRequestResource(HelpRequest::with(['changes', 'changes.needs', 'assigned_user'])->find($id));
     }
 
     /**
      * Update the specified resource in storage.
      *
      * @param Request $request
-     * @param  int  $id
+     * @param int $id
      * @return \Illuminate\Http\Response
      */
     public function update(Request $request, $id)
@@ -92,14 +145,14 @@ class HelpRequestController extends Controller
         $action = $request->get('action');
 
         $hr = HelpRequest::find($id);
-        switch($action) {
+        switch ($action) {
             case 'assignCurrentUser':
-                $hr -> assigned_user_id = $request->user('api')->id;
-                $return = [ 'assigned_user' => new UserResource(Auth::user()) ];
+                $hr->assigned_user_id = $request->user('api')->id;
+                $return = ['assigned_user' => new UserResource(Auth::user())];
                 break;
             case 'unassignCurrentUser':
-                $hr -> assigned_user_id = null;
-                $return = [ 'assigned_user' => null ];
+                $hr->assigned_user_id = null;
+                $return = ['assigned_user' => null];
                 break;
         }
 
@@ -111,7 +164,7 @@ class HelpRequestController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  int  $id
+     * @param int $id
      * @return \Illuminate\Http\Response
      */
     public function destroy($id)
