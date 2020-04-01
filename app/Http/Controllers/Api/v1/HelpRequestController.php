@@ -79,7 +79,6 @@ class HelpRequestController extends Controller
         }
 
         $list = $list->with('assigned_user')->paginate($this->per_page);
-        return $list;
         return response()->json([
             "data" => [
                 'items' => new HelpRequestCollection($list->items()),
