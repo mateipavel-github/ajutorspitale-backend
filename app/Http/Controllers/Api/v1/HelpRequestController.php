@@ -85,7 +85,9 @@ class HelpRequestController extends Controller
                 'last_page' => $list->lastPage(),
                 'per_page' => $list->perPage(),
                 'total' => $list->total(),
-            ]
+            ],
+            "message" => __("Got collection"),
+            "success" => true
         ]);
 
     }
