@@ -46,7 +46,11 @@ class HelpRequestController extends Controller
         }
 
         if ($request->get("assigned_user_id")) {
-            $list->where(['assigned_user_id' => $request->get("assigned_user_id")]);
+            if(strtolower($request->get("assigned_user_id")) === "null"){
+                $list->whereNull('assigned_user_id');
+            }else{
+                $list->where(['assigned_user_id' => $request->get("assigned_user_id")]);
+            }
         }
 
         if ($request->get("medical_unit_id")) {
@@ -62,7 +66,7 @@ class HelpRequestController extends Controller
         }
 
         if ($request->get("status")) {
-            $list->where(['status' => $request->get("status")]);
+            $list->whereIn('status', (array)$request->get("status"));
         }
 
         if ($request->get("medical_unit_name")) {
