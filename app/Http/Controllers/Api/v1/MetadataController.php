@@ -68,7 +68,6 @@ class MetadataController extends Controller
             $t->slug = $request->post('slug');
         }
 
-        $t->status = 'active';
         if($t->save()) {
             return [
                 'success'=>true,
