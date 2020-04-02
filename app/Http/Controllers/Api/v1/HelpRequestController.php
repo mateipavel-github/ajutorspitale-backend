@@ -12,6 +12,7 @@ use \App\Http\Resources\HelpRequest as HelpRequestResource;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\User as UserResource;
 use Illuminate\Support\Facades\Log;
+use App\MetadataRequestStatusType;
 
 class HelpRequestController extends Controller
 {
@@ -66,12 +67,24 @@ class HelpRequestController extends Controller
             $list->where(['county_id' => $request->get("county_id")]);
         }
 
-        if ($request->get("status")) {
-            if (is_array($request->get("status"))) {
-                $list->whereIn('status', $request->get("status"));
-            } else {
-                $list->whereIn('status', explode(',', $request->get("status")));
+        if ($statusSelection = $request->get("status")) {
+            if (!is_array($statusSelection)) {
+                $statusSelection = explode(',', $statusSelection);
             }
+
+            $statusSelectionIds = [];
+            if(is_int($statusSelection[0])) {
+                $statusSelectionIds = $statusSelection;
+            } else {
+                $possibleStatuses = MetadataRequestStatusType::all();
+                foreach($possibleStatuses as $ps) {
+                    if(in_array($ps['slug'], $statusSelection)) {
+                        $statusSelectionIds[] = $ps['id'];
+                    }
+                }
+            }
+
+            $list->whereIn('status', $statusSelectionIds);
         }
 
         if ($request->get("medical_unit_name")) {
