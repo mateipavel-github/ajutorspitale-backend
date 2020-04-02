@@ -35,3 +35,9 @@ Route::put('changeRequests', 'Api\v1\HelpRequestChangeController@store');
 
 Route::get('metadata', 'Api\v1\MetadataController@index');
 Route::middleware("auth:api")->put('metadata', 'Api\v1\MetadataController@store');
+Route::middleware("auth:api")->delete('metadata', 'Api\v1\MetadataController@softDelete');
+
+Route::middleware("auth:api")->resource('users', 'Api\v1\UserController', ['except' => ['delete']]);
+Route::middleware("auth:api")->delete('users/{user}', 'Api\v1\UserController@softDelete');
+
+
