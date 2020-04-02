@@ -12,26 +12,7 @@ class FirstSeeder extends Seeder
     public function run()
     {
         //create metadata
-        $this -> medicalUnitTypes();
-        $this -> counties();
         $this -> needTypes();
-        $this -> changeTypes();
-
-        //create admin user
-        DB::table('users')->insert([
-            'name' => 'admin',
-            'email' => 'matei+admin@konk-media.com',
-            'phone_number' => '0722278567',
-            'password' => Hash::make('password'),
-        ]);
-
-        //create one doctor/requester account
-        $doctorId = DB::table('users')->insertGetId([
-            'name' => 'doctor',
-            'email' => 'matei+doctor@konk-media.com',
-            'phone_number' => '0729964694',
-            'password' => Hash::make('password'),
-        ]);
 
         //create one volunteer account
         $volunteerId = DB::table('users')->insertGetId([
@@ -42,7 +23,6 @@ class FirstSeeder extends Seeder
 
         //create requests
         $requestId = DB::table('help_requests')->insertGetId($originalRequestData = [
-            'user_id' => $doctorId,
             'name' => 'Domnul Doctor',
             'phone_number' => '+40722278567',
             'job_title' => 'Șef de secție ATI',
@@ -76,52 +56,12 @@ class FirstSeeder extends Seeder
 
     }
 
-    public function medicalUnitTypes() {
-
-        $list = ['spital județean de stat', 'spital orășenesc de stat', 'alt fel de spital de stat (maternitate; cu o anumită specializare; etc)', 'spital privat', 'direcția ambulanțe', 'medic de familie'];
-
-        foreach($list as $item) {
-            DB::table('metadata_medical_unit_types')->insert([
-                'label' => $item,
-                'status' => 'active'
-            ]);
-        }
-
-    }
-
-    public function changeTypes() {
-
-        $list = ['Delivery','Typo','Update by solicitor','Update by volunteer at the request of solicitor'];
-
-        foreach($list as $item) {
-            DB::table('metadata_change_types')->insert([
-                'label' => $item,
-                'status' => 'active'
-            ]);
-        }
-
-    }
-
-    public function counties() {
-
-        $list = ['Alba','Argeș','Arad','București','Bacău','Bihor','Bistrița Năsăud','Brăila','Botoșani','Brașov','Buzău','Cluj','Călărași','Caraș-Severin','Constanța','Covasna','Dâmbovița','Dolj','Gorj','Galați','Giurgiu','Hunedoara','Harghita','Ilfov','Ialomița','Iași','Mehedinți','Maramureș','Mureș','Neamț','Olt','Prahova','Sibiu','Sălaj','Satu-Mare','Suceava','Tulcea','Timiș','Teleorman','Vâlcea','Vrancea'];
-
-        foreach($list as $item) {
-            DB::table('metadata_counties')->insert([
-                'label' => $item,
-                'status' => 'active'
-            ]);
-        }
-
-    }
-
     public function needTypes() {
 
         $list = ['Hârtie igienică', 'Măști FPP2', 'Măști FPP3', 'Mănuși'];
         foreach($list as $item) {
             DB::table('metadata_need_types')->insert([
                 'label' => $item,
-                'status' => 'active'
             ]);
         }
 
