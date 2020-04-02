@@ -34,6 +34,7 @@ class LoginController extends Controller
             ]);
         }
         $current_user = Auth::user();
+        $current_user->load('role');
         return response()->json($current_user);    
         $token = $current_user->createToken('authToken', [$current_user->role->slug])->accessToken;
         return response()->json([
