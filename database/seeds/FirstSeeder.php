@@ -56,7 +56,7 @@ class FirstSeeder extends Seeder
         //create request change
         $requestChangeId = DB::table('help_request_changes')->insertGetId([
             'help_request_id' => $requestId,
-            'changes' => json_encode($originalRequestData),
+            'change_log' => json_encode($originalRequestData),
             'user_id' => $volunteerId,
             'user_comment' => 'first entry',
             'status' => 'final',
