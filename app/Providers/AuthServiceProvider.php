@@ -31,8 +31,8 @@ class AuthServiceProvider extends ServiceProvider
 
         if (Schema::hasTable($rolesTable = (new MetadataUserRoleType())->getTable())) {
             $role_type_scopes = DB::table($rolesTable)->select('label')->get()->pluck('slug');
-            if (!empty($role_type_scopes)) {
-                Passport::tokensCan($role_type_scopes);
+            if (!empty($role_type_scopes['items'])) {
+                Passport::tokensCan($role_type_scopes['items']);
             }
         }
 
