@@ -29,7 +29,7 @@ class HelpRequestChangeController extends Controller
         //create new change
         $rc = new HelpRequestChange;
         $rc->help_request_id = $data['help_request_id'];
-        $rc->user_id = Auth::check() ? Auth::user()->id : null;
+        $rc->user_id = request()->user('api') ? request()->user('api')->id : null;
         $rc->change_type_id = $data['change_type_id'];
         $rc->user_comment = $data['user_comment'];
         $changes = $data;
@@ -37,6 +37,18 @@ class HelpRequestChangeController extends Controller
         if(isset($data['needs']) && !empty($data['needs'])) {
             $changes['needs'] = true;
         }
+
+        $requestDataFields = ['medical_unit_id', 'medical_unit_type_id','medical_unit_name','name','phone_number','job_title'];
+        $request = HelpRequest::find($rc->help_request_id);
+        foreach($requestDataFields as $field) {
+            if(isset($data[$field])) {
+                $request->{$field} = $data[$field];
+            }
+            if($request->isDirty()) {
+                $request->save();
+            }
+        }
+        
         $rc->change_log = $changes;
         $rc->save();
 

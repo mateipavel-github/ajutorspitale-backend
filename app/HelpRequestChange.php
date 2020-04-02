@@ -4,6 +4,8 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\HelpRequest;
+use App\HelpRequestChangeNeed;
 
 class HelpRequestChange extends Model
 {
@@ -30,5 +32,9 @@ class HelpRequestChange extends Model
 
     public function delivery() {
         return $this->belongsTo('App\Delivery');
+    }
+
+    public function user() {
+        return $this->belongsTo('App\User');
     }
 }

@@ -5,15 +5,43 @@ namespace App;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\HelpRequestChange;
+use App\HelpRequestChangeNeed;
 
 class HelpRequest extends Model
 {
 
     use SoftDeletes;
 
+     protected $with = ['changes.user'];
     protected $fillable = ['assigned_user_id'];
+    protected $casts = [
+        'current_needs' => 'array'
+    ];
+
+    public function getCurrentNeedsAttribute($value)
+    {
+        $tables = [
+            'hr' => (new HelpRequest()) -> getTable(),
+            'hrc' => (new HelpRequestChange()) -> getTable(),
+            'hrcn' => (new HelpRequestChangeNeed()) -> getTable(),
+        ];
+
+        $request_id = $this->id;
+
+        $list = DB::table($tables['hrcn'])
+            ->select('need_type_id', DB::raw('SUM(quantity) as quantity'))
+            ->whereIn('help_request_change_id', function ($query) use ($tables, $request_id) {
+                $query->select('id')
+                    ->from($tables['hrc'])
+                    ->where('help_request_id', '=', $request_id);
+            })
+            ->groupBy('need_type_id')->get();
+        return $list;
+    }
 
     //
     public function changes()
