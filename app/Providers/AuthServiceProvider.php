@@ -29,10 +29,17 @@ class AuthServiceProvider extends ServiceProvider
     {
         $this->registerPolicies();
 
-        if (Schema::hasTable($rolesTable = (new MetadataUserRoleType())->getTable())) {
-            $role_type_scopes = DB::table($rolesTable)->select('label')->get()->pluck('slug');
-            if (!empty($role_type_scopes['items'])) {
-                Passport::tokensCan($role_type_scopes['items']);
+        $rolesTable = (new MetadataUserRoleType())->getTable();
+    
+        if (Schema::hasTable($rolesTable) && Schema::hasColumn($rolesTable, 'slug')) {
+            $role_type_scopes = DB::table($rolesTable)->select('slug','label')->get();      
+            
+            if (!empty($role_type_scopes)) {
+                $tokensCan = [];
+                foreach($role_type_scopes as $role) {
+                    $tokensCan[$role->slug] = $role->label;
+                }
+                Passport::tokensCan($tokensCan);
             }
         }
 
