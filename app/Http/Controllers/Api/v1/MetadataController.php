@@ -12,9 +12,32 @@ use App\MetadataCounty;
 use App\MetadataMedicalUnitType;
 use App\MetadataChangeType;
 use App\MetadataRequestStatusType;
+use App\MedicalUnit;
 
 class MetadataController extends Controller
 {
+
+    public function medicalUnits(Request $request) {
+
+        $list = MedicalUnit::select("*");
+        if ($request->get('county_id')) {
+            $list->where(['county_id' => $request->get("county_id")]);
+        }
+        
+        if ($request->get('filter')) {
+            $list->where('name', 'LIKE', '%'.$request->get('filter').'%');
+        }
+
+        $results = $list->get()->toArray();
+        return response()->json([
+            "data" => [
+                'items' => $results
+            ],
+            "message" => __("Got collection"),
+            "success" => true
+        ]);
+    }
+
 
     public function index(Request $request)
     {

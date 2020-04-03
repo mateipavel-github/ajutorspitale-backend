@@ -155,7 +155,7 @@ class HelpRequestController extends Controller
      */
     public function show(Request $request, $id)
     {
-        return new HelpRequestResource(HelpRequest::with(['changes', 'changes.needs', 'assigned_user'])->find($id));
+        return new HelpRequestResource(HelpRequest::with(['changes', 'changes.needs', 'assigned_user', 'medical_unit'])->find($id));
     }
 
     /**

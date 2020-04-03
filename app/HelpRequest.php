@@ -16,7 +16,7 @@ class HelpRequest extends Model
 
     use SoftDeletes;
 
-     protected $with = ['changes.user'];
+    protected $with = ['changes.user'];
     protected $fillable = ['assigned_user_id'];
     protected $casts = [
         'current_needs' => 'array'
@@ -55,6 +55,10 @@ class HelpRequest extends Model
 
     public function medical_unit_type() {
         return $this->hasOne('App\MetadataMedicalUnitType');
+    }
+
+    public function medical_unit() {
+        return $this->belongsTo('App\MedicalUnit', 'medical_unit_id', 'id');
     }
 
     public function saveWithChanges($changeData, $needs=[]) {

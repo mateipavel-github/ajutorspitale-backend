@@ -40,4 +40,6 @@ Route::middleware("auth:api")->delete('metadata', 'Api\v1\MetadataController@sof
 Route::middleware("auth:api")->resource('users', 'Api\v1\UserController', ['except' => ['delete']]);
 Route::middleware("auth:api")->delete('users/{user}', 'Api\v1\UserController@softDelete');
 
+Route::get('metadata/medical-units', 'Api\v1\MetadataController@medicalUnits');
+
 
