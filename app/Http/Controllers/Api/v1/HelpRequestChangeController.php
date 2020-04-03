@@ -38,7 +38,7 @@ class HelpRequestChangeController extends Controller
             $changes['needs'] = true;
         }
 
-        $requestDataFields = ['medical_unit_id', 'medical_unit_type_id','medical_unit_name','name','phone_number','job_title'];
+        $requestDataFields = ['county_id','medical_unit_id', 'medical_unit_type_id','medical_unit_name','name','phone_number','job_title'];
         $request = HelpRequest::find($rc->help_request_id);
         foreach($requestDataFields as $field) {
             if(isset($data[$field])) {

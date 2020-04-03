@@ -129,6 +129,7 @@ class HelpRequestController extends Controller
 
         $hr->name = $data['name'];
         $hr->job_title = $data['job_title'];
+        $hr->county_id = $data['county_id'];
         $hr->phone_number = $data['phone_number'];
         $hr->medical_unit_type_id = $data['medical_unit_type_id'];
         $hr->medical_unit_name = $data['medical_unit_name'];

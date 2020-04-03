@@ -24,6 +24,7 @@ class HelpRequest extends JsonResource
             'medical_unit_type_id' => $this -> medical_unit_type_id,
             'medical_unit_name' => $this -> medical_unit_name,
             'current_needs' => $this -> current_needs,
+            'county_id' => $this -> county_id,
             'changes' => HelpRequestChangeResource::collection($this -> whenLoaded('changes')),
             'extra_info' => $this -> extra_info,
             'needs_text' => $this -> needs_text,
