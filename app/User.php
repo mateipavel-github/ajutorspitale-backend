@@ -48,4 +48,16 @@ class User extends Authenticatable
     {
         return $this->where('phone_number', $username)->orWhere('email', $username)->first();
     }
+
+    /**
+     * @return bool
+     */
+    public function isAdmin()
+    {
+        $admin_role = MetadataUserRoleType::where(['slug' => 'admin'])->first();
+        if ($this->role_type_id === $admin_role->id) {
+            return true;
+        }
+        return false;
+    }
 }

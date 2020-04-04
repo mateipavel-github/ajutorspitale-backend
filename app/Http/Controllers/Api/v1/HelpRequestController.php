@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 
+use App\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\HelpRequest;
 use App\Http\Resources\HelpRequestCollection;
 use \App\Http\Resources\HelpRequest as HelpRequestResource;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\User as UserResource;
 use Illuminate\Support\Facades\Log;
@@ -37,7 +39,7 @@ class HelpRequestController extends Controller
      */
     public function index(Request $request)
     {
-        
+
         $list = HelpRequest::select("*");
         if ($request->get("per_page")) {
             $this->per_page = $request->get('per_page');
@@ -73,12 +75,12 @@ class HelpRequestController extends Controller
             }
 
             $statusSelectionIds = [];
-            if(is_int($statusSelection[0])) {
+            if (is_int($statusSelection[0])) {
                 $statusSelectionIds = $statusSelection;
             } else {
                 $possibleStatuses = MetadataRequestStatusType::all();
-                foreach($possibleStatuses as $ps) {
-                    if(in_array($ps['slug'], $statusSelection)) {
+                foreach ($possibleStatuses as $ps) {
+                    if (in_array($ps['slug'], $statusSelection)) {
                         $statusSelectionIds[] = $ps['id'];
                     }
                 }
@@ -150,8 +152,9 @@ class HelpRequestController extends Controller
     /**
      * Display the specified resource.
      *
+     * @param Request $request
      * @param int $id
-     * @return \Illuminate\Http\Response
+     * @return HelpRequestResource
      */
     public function show(Request $request, $id)
     {
@@ -163,7 +166,7 @@ class HelpRequestController extends Controller
      *
      * @param Request $request
      * @param int $id
-     * @return \Illuminate\Http\Response
+     * @return array
      */
     public function update(Request $request, $id)
     {
@@ -172,15 +175,19 @@ class HelpRequestController extends Controller
         $hr = HelpRequest::find($id);
         switch ($action) {
             case 'changeStatus':
-                $hr->status = $request->post('status');
+                if (Auth::user()->isAdmin() || (int)$hr->assigned_user_id === (int)Auth::user()->id) {
+                    $hr->status = $request->post('status');
+                }
                 break;
             case 'assignCurrentUser':
                 $hr->assigned_user_id = $request->user('api')->id;
                 $return = ['assigned_user' => new UserResource(Auth::user())];
                 break;
             case 'unassignCurrentUser':
-                $hr->assigned_user_id = null;
-                $return = ['assigned_user' => null];
+                if (Auth::user()->isAdmin() || (int)$hr->assigned_user_id === (int)Auth::user()->id) {
+                    $hr->assigned_user_id = null;
+                    $return = ['assigned_user' => null];
+                }
                 break;
         }
 
@@ -193,7 +200,7 @@ class HelpRequestController extends Controller
      * Remove the specified resource from storage.
      *
      * @param int $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function destroy($id)
     {

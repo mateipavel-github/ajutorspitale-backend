@@ -23,7 +23,7 @@ class MetadataController extends Controller
         if ($request->get('county_id')) {
             $list->where(['county_id' => $request->get("county_id")]);
         }
-        
+
         if ($request->get('filter')) {
             $list->where('name', 'LIKE', '%'.$request->get('filter').'%');
         }
@@ -85,7 +85,7 @@ class MetadataController extends Controller
 
         $t->label = $request->post('label');
 
-        $typesWithSlug = ['user_role_types', 'change_types'];
+        $typesWithSlug = ['user_role_types', 'change_types', 'medical_unit_types', 'request_status_types', 'counties', 'need_types'];
 
         if(in_array($request->post('metadata_type'), $typesWithSlug)) {
             $t->slug = $request->post('slug');
