@@ -1,10 +1,13 @@
 <?php
 
 namespace App\Http\Controllers\Api\v1;
+
 use App\Http\Controllers\Controller;
 use App\Http\Resources\User as UserResource;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\User;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
@@ -12,7 +15,7 @@ class UserController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
      */
     public function index()
     {
@@ -28,7 +31,7 @@ class UserController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return void
      */
     public function create()
     {
@@ -38,22 +41,23 @@ class UserController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @return JsonResponse
      */
     public function store(Request $request)
     {
         $u = new User();
+        $u->fill([
+            "name" => $request->post('name'),
+            "phone_number" => $request->post('phone_number'),
+            "email" => $request->post('email'),
+            "role_type_id" => $request->post('role_type_id'),
+            "password" => Hash::make($request->post('password')),
+        ]);
 
-        $u -> name = $request -> post('name');
-        $u -> phone_number = $request -> post('phone_number');
-        $u -> email = $request -> post('email');
-        $u -> role_type_id = $request -> post('role_type_id');
-        $u -> password = $request -> post('password');
+        $success = $u->save();
 
-        $success = $u -> save();
-
-        if($success) {
+        if ($success) {
             return response()->json([
                 "data" => [
                     'item' => new UserResource($u)
@@ -61,19 +65,19 @@ class UserController extends Controller
                 "message" => __("New user created"),
                 "success" => true
             ]);
-        } else {
-            return response()->json([
-                "error" => __("Creation failed"),
-                "success" => false
-            ]);
         }
+
+        return response()->json([
+            "error" => __("Creation failed"),
+            "success" => false
+        ]);
     }
 
     /**
      * Display the specified resource.
      *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @param int $id
+     * @return Response
      */
     public function show($id)
     {
@@ -83,8 +87,8 @@ class UserController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @param int $id
+     * @return Response
      */
     public function edit($id)
     {
@@ -94,25 +98,25 @@ class UserController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @param int $id
+     * @return JsonResponse
      */
     public function update(Request $request, $id)
     {
         $u = User::find($id);
 
-        $u -> name = $request -> post('name');
-        $u -> phone_number = $request -> post('phone_number');
-        $u -> email = $request -> post('email');
-        $u -> role_type_id = $request -> post('role_type_id');
-        if($request->post('password')) {
-            $u -> password = Hash::make($request -> post('password'));  
+        $u->name = $request->post('name');
+        $u->phone_number = $request->post('phone_number');
+        $u->email = $request->post('email');
+        $u->role_type_id = $request->post('role_type_id');
+        if ($request->post('password')) {
+            $u->password = Hash::make($request->post('password'));
         }
 
-        $success = $u -> save();
+        $success = $u->save();
 
-        if($success) {
+        if ($success) {
             return response()->json([
                 "data" => [
                     'item' => new UserResource($u)
@@ -120,19 +124,19 @@ class UserController extends Controller
                 "message" => __("User updated"),
                 "success" => true
             ]);
-        } else {
-            return response()->json([
-                "error" => __("Update failed"),
-                "success" => false
-            ]);
         }
+
+        return response()->json([
+            "error" => __("Update failed"),
+            "success" => false
+        ]);
     }
 
     /**
      * Remove the specified resource from storage.
      *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @param int $id
+     * @return Response
      */
     public function softDelete($id)
     {
