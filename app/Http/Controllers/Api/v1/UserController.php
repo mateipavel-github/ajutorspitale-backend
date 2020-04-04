@@ -46,6 +46,14 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
+        $request->validate([
+            "name" => 'required|string',
+            "phone_number" => 'required|string|max:10',
+            "email" => 'required|email|unique:users',
+            "role_type_id" => 'required',
+            'password' => 'required|string'
+        ]);
+
         $u = new User();
         $u->fill([
             "name" => $request->post('name'),
@@ -60,7 +68,7 @@ class UserController extends Controller
         if ($success) {
             return response()->json([
                 "data" => [
-                    'item' => new UserResource($u)
+                    'item' => new UserResource(User::where(['id' => $u->id])->with("role")->first())
                 ],
                 "message" => __("New user created"),
                 "success" => true
