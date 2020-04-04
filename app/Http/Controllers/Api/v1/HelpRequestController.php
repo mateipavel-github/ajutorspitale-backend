@@ -78,7 +78,7 @@ class HelpRequestController extends Controller
             } else {
                 $possibleStatuses = MetadataRequestStatusType::all();
                 foreach($possibleStatuses as $ps) {
-                    if(in_array($ps['slug'], $statusSelection)) {
+                    if(in_array($ps->slug, $statusSelection)) {
                         $statusSelectionIds[] = $ps['id'];
                     }
                 }

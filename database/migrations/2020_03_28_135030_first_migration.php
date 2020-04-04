@@ -83,10 +83,18 @@ class FirstMigration extends Migration
         ]);
         
         //add medical unit types
-        $list = ['spital județean de stat', 'spital orășenesc de stat', 'alt fel de spital de stat (maternitate; cu o anumită specializare; etc)', 'spital privat', 'direcția ambulanțe', 'medic de familie'];
+        $list = [
+            ['label'=>'spital județean de stat', 'slug'=>'state-hospital-county'], 
+            ['label'=>'spital orășenesc de stat', 'slug'=>'state-hospital-city'], 
+            ['label'=>'alt fel de spital de stat (maternitate; cu o anumită specializare; etc)', 'slug'=>'state-hospital-other'], 
+            ['label'=>'spital privat', 'slug'=>'private-hospital'], 
+            ['label'=>'direcția ambulanțe', 'slug'=>'state-ambulance'], 
+            ['label'=>'medic de familie', 'slug'=>'family-doctor']
+        ];
         foreach($list as $item) {
             DB::table('metadata_medical_unit_types')->insert([
-                'label' => $item
+                'label' => $item['label'],
+                'slug' => $item['slug']
             ]);
         }
 
