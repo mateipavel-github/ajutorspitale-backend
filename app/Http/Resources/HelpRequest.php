@@ -30,6 +30,7 @@ class HelpRequest extends JsonResource
             'changes' => HelpRequestChangeResource::collection($this -> whenLoaded('changes')),
             'extra_info' => $this -> extra_info,
             'needs_text' => $this -> needs_text,
+            'other_needs' => $this -> other_needs,
             'assigned_user' => new UserResource($this -> whenLoaded('assigned_user')),
             'notes' => $this->whenLoaded('notes'),
             'status' => $this -> status
