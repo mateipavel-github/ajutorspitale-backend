@@ -22,7 +22,7 @@ Route::group(['prefix' => 'user'], function() {
     Route::get('/', function() {
         return response()->json(Auth::guard('api')->user());
     });
-}); 
+});
 
 /* requests */
 Route::middleware("auth:api")->resource('requests', 'Api\v1\HelpRequestController', ['except' => ['store']]);
@@ -42,4 +42,9 @@ Route::middleware("auth:api")->delete('users/{user}', 'Api\v1\UserController@sof
 
 Route::get('metadata/medical-units', 'Api\v1\MetadataController@medicalUnits');
 
+// these routes should be removed after import
 
+
+Route::prefix('import')->group(function () {
+    Route::get('need-types', 'Api\v1\ImportController@need_types');
+});
