@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\v1;
 use App\HelpRequest;
 use App\HelpRequestChange;
 use App\HelpRequestChangeNeed;
+use App\HelpRequestNote;
 use App\Http\Controllers\Controller;
 
 use App\MetadataChangeType;
@@ -57,11 +58,11 @@ class ImportController extends Controller
         while (($data = fgetcsv($handle)) !== FALSE) {
             $request_volunteer = $this->saveUser($data, $volunteer_role);
             $existing_help_request = HelpRequest::where(['created_at' => Carbon::createFromFormat('m/d/Y H:i:s', $data[0])])->first();
-            try {
+            /*try {
                 $this->saveHelpRequest($data, $request_volunteer, $existing_help_request);
             } catch (\Exception $exception) {
                 dd($header, $data, $exception);
-            }
+            }*/
         }
 
         //populating the other_needs
@@ -189,6 +190,12 @@ class ImportController extends Controller
             $help_request_change->change_type_id = $change_type->id;
             $help_request_change->change_log = json_encode(['needs' => true]);
             $help_request_change->save();
+
+            $helpRequestNote = new HelpRequestNote();
+            $helpRequestNote->user_id = $existing_help_request->assigned_user_id;
+            $helpRequestNote->help_request_id = $existing_help_request->id;
+            $helpRequestNote->content = $existing_help_request->other_needs;
+            $helpRequestNote->save();
 
             foreach ($data as $column_key => $column) {
                 if ($column_key >= 3 && $column_key <= 18) {
