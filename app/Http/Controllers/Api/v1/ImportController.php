@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Api\v1;
 
 use App\HelpRequest;
+use App\HelpRequestChange;
+use App\HelpRequestChangeNeed;
 use App\Http\Controllers\Controller;
 
+use App\MetadataChangeType;
 use App\MetadataCounty;
 use App\MetadataMedicalUnitType;
 use App\MetadataNeedType;
@@ -54,21 +57,15 @@ class ImportController extends Controller
         while (($data = fgetcsv($handle)) !== FALSE) {
             $request_volunteer = $this->saveUser($data, $volunteer_role);
             $existing_help_request = HelpRequest::where(['created_at' => Carbon::createFromFormat('m/d/Y H:i:s', $data[0])])->first();
-            try {
+            /*try {
                 $this->saveHelpRequest($data, $request_volunteer, $existing_help_request);
             } catch (\Exception $exception) {
                 dd($header, $data, $exception);
-            }
+            }*/
         }
 
         //populating the other_needs
-        $handle = fopen(resource_path('/csv/date_publice.csv'), 'r');
-        $header = fgetcsv($handle);
-        while (($data = fgetcsv($handle)) !== FALSE) {
-            $existing_help_request = HelpRequest::where(['created_at' => Carbon::createFromFormat('m/d/Y H:i:s', $data[0])])->first();
-            $existing_help_request->other_needs = $data[21];
-            $existing_help_request->save();
-        }
+        $this->populateRequestNeeds();
     }
 
     protected function saveUser($data, MetadataUserRoleType $volunteer_role)
@@ -119,6 +116,7 @@ class ImportController extends Controller
         } else {
             $help_request = new HelpRequest();
         }
+
         $help_request->user_id = null;
         $help_request->assigned_user_id = $request_volunteer->id;
         $help_request->name = ucwords(strtolower(trim($data[1])));
@@ -134,5 +132,75 @@ class ImportController extends Controller
         $help_request->created_at = Carbon::createFromFormat('m/d/Y H:i:s', $data[0]);
         $help_request->save();
         return $help_request;
+    }
+
+    protected function getNeedType($need_type)
+    {
+        $need_type_db = MetadataNeedType::where(['slug' => Str::slug($need_type)])->first();
+        if (empty($need_type_db)) {
+            $need_type_db = new MetadataNeedType();
+            $need_type_db->fill([
+                'label' => $need_type,
+                'slug' => Str::slug($need_type),
+            ]);
+            $need_type_db->save();
+        }
+        return $need_type_db;
+    }
+
+    protected function populateRequestNeeds()
+    {
+        $handle = fopen(resource_path('/csv/date_publice.csv'), 'r');
+        $header = fgetcsv($handle);
+        $need_types = array_splice($header, 3, 16);
+        $parsed_need_types = [];
+
+        foreach ($need_types as $key => $need_type) {
+            $parsed_need_types[$key + 3] = $this->getNeedType($need_type);
+        }
+
+        while (($data = fgetcsv($handle)) !== FALSE) {
+            $existing_help_request = HelpRequest::where(['created_at' => Carbon::createFromFormat('m/d/Y H:i:s', $data[0])])->first();
+            $existing_help_request->other_needs = $data[20];
+            $existing_help_request->save();
+
+
+            switch (strtolower(trim($data[2]))) {
+                case "da":
+                    $status = MetadataRequestStatusType::where(['slug' => "approved"])->first();
+                    break;
+                case "nu":
+                    $status = MetadataRequestStatusType::where(['slug' => "rejected"])->first();
+                    break;
+                case "rezolvat":
+                    $status = MetadataRequestStatusType::where(['slug' => "complete"])->first();
+                    break;
+                default:
+                    $status = MetadataRequestStatusType::where(['slug' => "new"])->first();
+                    break;
+            }
+
+            $change_type = MetadataChangeType::where(['slug' => 'new_request'])->first();
+
+            $help_request_change = new HelpRequestChange();
+            $help_request_change->help_request_id = $existing_help_request->id;
+            $help_request_change->user_id = $existing_help_request->assigned_user_id;
+            $help_request_change->status = $status->id;
+            $help_request_change->change_type_id = $change_type->id;
+            $help_request_change->change_log = json_encode(['needs' => true]);
+            $help_request_change->save();
+
+            foreach ($data as $column_key => $column) {
+                if ($column_key >= 3 && $column_key <= 18) {
+                    if ($column !== '') {
+                        $help_request_change_need = new HelpRequestChangeNeed();
+                        $help_request_change_need->need_type_id = $parsed_need_types[$column_key]->id;
+                        $help_request_change_need->quantity = $column;
+                        $help_request_change_need->help_request_change_id = $help_request_change->id;
+                        $help_request_change_need->save();
+                    }
+                }
+            }
+        }
     }
 }
