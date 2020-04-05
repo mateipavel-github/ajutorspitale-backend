@@ -20,12 +20,32 @@ class HelpRequestController extends Controller
 {
     protected $per_page = 20;
 
+    public function getStatusSelectionIds($statusSelection) {
+        if (!is_array($statusSelection)) {
+            $statusSelection = explode(',', $statusSelection);
+        }
+
+        $statusSelectionIds = [];
+        if(is_int($statusSelection[0])) {
+            $statusSelectionIds = $statusSelection;
+        } else {
+            $possibleStatuses = MetadataRequestStatusType::all();
+            foreach($possibleStatuses as $ps) {
+                if(in_array($ps->slug, $statusSelection)) {
+                    $statusSelectionIds[] = $ps['id'];
+                }
+            }
+        }
+        
+        return $statusSelectionIds;
+    }
+
     public function massAssignToCurrentUser(Request $request)
     {
         $howMany = $request->post('howMany');
         $userId = $request->user('api')->id;
 
-        $requestIds = HelpRequest::whereIn('status', [1, 2])->whereNull('assigned_user_id')->pluck('id')->take($howMany);
+        $requestIds = HelpRequest::whereIn('status', $this->getStatusSelectionIds('new,approved'))->whereNull('assigned_user_id')->pluck('id')->take($howMany);
         HelpRequest::whereIn('id', $requestIds)->update(array('assigned_user_id' => $userId));
 
         return ['success' => true];
@@ -70,21 +90,7 @@ class HelpRequestController extends Controller
         }
 
         if ($statusSelection = $request->get("status")) {
-            if (!is_array($statusSelection)) {
-                $statusSelection = explode(',', $statusSelection);
-            }
-
-            $statusSelectionIds = [];
-            if(is_int($statusSelection[0])) {
-                $statusSelectionIds = $statusSelection;
-            } else {
-                $possibleStatuses = MetadataRequestStatusType::all();
-                foreach($possibleStatuses as $ps) {
-                    if(in_array($ps->slug, $statusSelection)) {
-                        $statusSelectionIds[] = $ps['id'];
-                    }
-                }
-            }
+            $statusSelectionIds = $this->getStatusSelectionIds($statusSelection);
 
             $list->whereIn('status', $statusSelectionIds);
         }
