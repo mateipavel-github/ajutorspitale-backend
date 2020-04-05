@@ -54,12 +54,10 @@ class ImportController extends Controller
         while (($data = fgetcsv($handle)) !== FALSE) {
             $request_volunteer = $this->saveUser($data, $volunteer_role);
             $existing_help_request = HelpRequest::where(['created_at' => Carbon::createFromFormat('m/d/Y H:i:s', $data[0])])->first();
-            if (empty($existing_help_request)) {
-                try {
-                    $this->saveHelpRequest($data, $request_volunteer);
-                } catch (\Exception $exception) {
-                    dd($header, $data, $exception);
-                }
+            try {
+                $this->saveHelpRequest($data, $request_volunteer, $existing_help_request);
+            } catch (\Exception $exception) {
+                dd($header, $data, $exception);
             }
         }
 
@@ -96,12 +94,12 @@ class ImportController extends Controller
         return $existing_user;
     }
 
-    protected function saveHelpRequest($data, User $request_volunteer)
+    protected function saveHelpRequest($data, User $request_volunteer, HelpRequest $existing_help_request = null)
     {
         $status = null;
         $medical_unit_type = MetadataMedicalUnitType::where(['label' => $data[7]])->first();
 
-        $county = MetadataCounty::where(['label' => ''])->first();
+        $county = MetadataCounty::where(['label' => $data[5]])->first();
         switch (strtolower(trim($data[11]))) {
             case "da":
                 $status = MetadataRequestStatusType::where(['slug' => "approved"])->first();
@@ -116,7 +114,11 @@ class ImportController extends Controller
                 $status = MetadataRequestStatusType::where(['slug' => "new"])->first();
                 break;
         }
-        $help_request = new HelpRequest();
+        if ($existing_help_request) {
+            $help_request = $existing_help_request;
+        } else {
+            $help_request = new HelpRequest();
+        }
         $help_request->user_id = null;
         $help_request->assigned_user_id = $request_volunteer->id;
         $help_request->name = ucwords(strtolower(trim($data[1])));
