@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\V1;
+namespace App\Http\Controllers\Api\v1;
 
 use App\Http\Controllers\Controller;
 
@@ -150,7 +150,7 @@ class HelpRequestController extends Controller
         // return the new request so that the angular app can reload
         return [
             'success' => true,
-            'newHelpRequest' => new HelpRequestResource(HelpRequest::with(['changes', 'changes.needs', 'assigned_user'])->find($hr->id))
+            'newHelpRequest' => new HelpRequestResource(HelpRequest::with(['changes', 'changes.needs', 'assigned_user', 'notes', 'notes.user'])->find($hr->id))
         ];
 
     }

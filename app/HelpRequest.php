@@ -10,13 +10,14 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\HelpRequestChange;
 use App\HelpRequestChangeNeed;
+use App\RequestNote;
 
 class HelpRequest extends Model
 {
 
     use SoftDeletes;
 
-    protected $with = ['changes.user'];
+    protected $with = ['changes.user','notes','notes.user'];
     protected $fillable = ['assigned_user_id'];
     protected $casts = [
         'current_needs' => 'array'
@@ -48,6 +49,11 @@ class HelpRequest extends Model
     {
         return $this->hasMany('App\HelpRequestChange');
     }
+
+    public function notes() {
+        return $this->hasMany('App\HelpRequestNote');
+    }
+
 
     public function assigned_user() {
         return $this -> belongsTo('App\User', 'assigned_user_id', 'id');
