@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Hash;
 
 /*
 |--------------------------------------------------------------------------
@@ -20,10 +21,16 @@ Route::post('/user/login', 'Api\v1\LoginController@login');
 /* just for testing purposes */
 Route::group(['prefix' => 'system'], function() {
     Route::get('/user', function() {
-        return response()->json(Auth::guard('api')->user());
+        return [
+            'auth'=>response()->json(Auth::guard('api')->user()),
+            'request'=>response()->json(request()->user('api'))
+        ];
     });
     Route::get('/php', function() {
         phpinfo();
+    });
+    Route::get('/hash/{str}', function() {
+        echo Hash::make(request()->get('str'));
     });
 });
 
@@ -48,7 +55,9 @@ Route::middleware("auth:api")->resource('request-notes', 'Api\v1\HelpRequestNote
 Route::get('metadata/medical-units', 'Api\v1\MetadataController@medicalUnits');
 
 // these routes should be removed after import
-Route::prefix('import')->group(function () {
-    Route::get('need-types', 'Api\v1\ImportController@need_types');
-    Route::get('form-responses', 'Api\v1\ImportController@form_responses');
-});
+if(env('APP_ENV')==='local') {
+    Route::prefix('import')->group(function () {
+        Route::get('need-types', 'Api\v1\ImportController@need_types');
+        Route::get('form-responses', 'Api\v1\ImportController@form_responses');
+    });
+}
