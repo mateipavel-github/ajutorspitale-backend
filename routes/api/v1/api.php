@@ -40,6 +40,8 @@ Route::middleware("auth:api")->delete('metadata', 'Api\v1\MetadataController@sof
 Route::middleware("auth:api")->resource('users', 'Api\v1\UserController', ['except' => ['delete']]);
 Route::middleware("auth:api")->delete('users/{user}', 'Api\v1\UserController@softDelete');
 
+Route::middleware("auth:api")->resource('request-notes', 'Api\v1\HelpRequestNoteController');
+
 Route::get('metadata/medical-units', 'Api\v1\MetadataController@medicalUnits');
 
 // these routes should be removed after import
