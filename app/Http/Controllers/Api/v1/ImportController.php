@@ -57,11 +57,11 @@ class ImportController extends Controller
         while (($data = fgetcsv($handle)) !== FALSE) {
             $request_volunteer = $this->saveUser($data, $volunteer_role);
             $existing_help_request = HelpRequest::where(['created_at' => Carbon::createFromFormat('m/d/Y H:i:s', $data[0])])->first();
-            /*try {
+            try {
                 $this->saveHelpRequest($data, $request_volunteer, $existing_help_request);
             } catch (\Exception $exception) {
                 dd($header, $data, $exception);
-            }*/
+            }
         }
 
         //populating the other_needs
