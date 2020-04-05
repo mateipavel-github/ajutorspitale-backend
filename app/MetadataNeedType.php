@@ -8,4 +8,5 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class MetadataNeedType extends Model
 {
     use SoftDeletes;
+    protected $fillable = ['label', 'slug'];
 }
