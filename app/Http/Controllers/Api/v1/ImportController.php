@@ -197,7 +197,7 @@ class ImportController extends Controller
             $helpRequestNote = new HelpRequestNote();
             $helpRequestNote->user_id = $existing_help_request->assigned_user_id;
             $helpRequestNote->help_request_id = $existing_help_request->id;
-            $helpRequestNote->content = $existing_help_request->other_needs;
+            $helpRequestNote->content = $existing_help_request->caller_observations;
             $helpRequestNote->save();
 
             foreach ($data as $column_key => $column) {
