@@ -151,6 +151,9 @@ class ImportController extends Controller
 
     protected function populateRequestNeeds()
     {
+        HelpRequestChange::truncate();
+        HelpRequestChangeNeed::truncate();
+        HelpRequestNote::truncate();
         $handle = fopen(resource_path('/csv/date_publice.csv'), 'r');
         $header = fgetcsv($handle);
         $need_types = array_splice($header, 3, 16);
