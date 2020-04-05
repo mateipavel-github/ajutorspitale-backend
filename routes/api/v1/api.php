@@ -18,9 +18,12 @@ use Illuminate\Support\Facades\Route;
 Route::post('/user/login', 'Api\v1\LoginController@login');
 
 /* just for testing purposes */
-Route::group(['prefix' => 'user'], function() {
-    Route::get('/', function() {
+Route::group(['prefix' => 'system'], function() {
+    Route::get('/user', function() {
         return response()->json(Auth::guard('api')->user());
+    });
+    Route::get('/php', function() {
+        phpinfo();
     });
 });
 
