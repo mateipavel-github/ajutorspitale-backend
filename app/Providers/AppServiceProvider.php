@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
+use App\HelpRequestChange;
+use App\Observers\HelpRequestChangeObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -36,6 +38,8 @@ class AppServiceProvider extends ServiceProvider
                 );
             });
         }
+
+        HelpRequestChange::observe(HelpRequestChangeObserver::class);
 
     }
 }

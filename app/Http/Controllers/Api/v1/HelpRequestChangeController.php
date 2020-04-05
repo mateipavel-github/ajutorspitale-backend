@@ -62,6 +62,9 @@ class HelpRequestChangeController extends Controller
             }
         }
 
+        //save request change again, to trigger observer so that the current_needs of HelpRequest get updated.
+        $rc->save();
+
         // return the new request so that the angular app can reload
         return [
             'success' => true,

@@ -23,8 +23,7 @@ class HelpRequest extends Model
         'current_needs' => 'array'
     ];
 
-    public function getCurrentNeedsAttribute($value)
-    {
+    public function _getCurrentNeedsAttribute() {
         $tables = [
             'hr' => (new HelpRequest()) -> getTable(),
             'hrc' => (new HelpRequestChange()) -> getTable(),
@@ -42,6 +41,17 @@ class HelpRequest extends Model
             })
             ->groupBy('need_type_id')->get();
         return $list;
+    }
+
+    //$value can be anything, we won't use it.
+    //current_needs is an aggregate of help_request_change_needs for the help_request_changes of this request
+    public function setCurrentNeedsAttribute($value) {
+        $this -> attributes['current_needs'] = $this->castAttributeAsJson('current_needs', $this->_getCurrentNeedsAttribute());
+    }
+
+    public function getCurrentNeedsAttribute()
+    {
+        return $this->_getCurrentNeedsAttribute();
     }
 
     //
