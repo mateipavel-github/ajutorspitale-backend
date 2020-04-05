@@ -64,9 +64,10 @@ class ImportController extends Controller
                 dd($header, $data, $exception);
             }
         }
+        dd('finished');
 
         //populating the other_needs
-        $this->populateRequestNeeds();
+        //$this->populateRequestNeeds();
     }
 
     protected function saveUser($data, MetadataUserRoleType $volunteer_role)
