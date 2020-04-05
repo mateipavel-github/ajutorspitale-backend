@@ -45,8 +45,7 @@ Route::middleware("auth:api")->resource('request-notes', 'Api\v1\HelpRequestNote
 Route::get('metadata/medical-units', 'Api\v1\MetadataController@medicalUnits');
 
 // these routes should be removed after import
-
-
 Route::prefix('import')->group(function () {
     Route::get('need-types', 'Api\v1\ImportController@need_types');
+    Route::get('form-responses', 'Api\v1\ImportController@form_responses');
 });
