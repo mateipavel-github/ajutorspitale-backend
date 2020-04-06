@@ -181,23 +181,27 @@ class HelpRequestController extends Controller
         $hr = HelpRequest::find($id);
         switch ($action) {
             case 'changeStatus':
-                if (Auth::user()->isAdmin() || (int)$hr->assigned_user_id === (int)Auth::user()->id) {
-                    $hr->status = $request->post('status');
-                } else {
-                    return ['success'=>false, 'error'=>'Cererea a fost preluată de alt voluntar. Doar el sau un administrator pot schimba statusul.'];
-                }
+                $hr->status = $request->post('status');
+                // if (Auth::user()->isAdmin() || (int)$hr->assigned_user_id === (int)Auth::user()->id) {
+                //     $hr->status = $request->post('status');
+                // } else {
+                //     return ['success'=>false, 'error'=>'Cererea a fost preluată de alt voluntar. Doar el sau un administrator pot schimba statusul.'];
+                // }
                 break;
             case 'assignCurrentUser':
                 $hr->assigned_user_id = $request->user('api')->id;
                 $return = ['assigned_user' => new UserResource(Auth::user())];
                 break;
             case 'unassignCurrentUser':
-                if (Auth::user()->isAdmin() || (int)$hr->assigned_user_id === (int)Auth::user()->id) {
-                    $hr->assigned_user_id = null;
-                    $return = ['assigned_user' => null];
-                } else {
-                    return ['success'=>false, 'error'=>'Doar voluntarul care a preluat cererea sau un administrator pot face această modificare.'];
-                }
+                $hr->assigned_user_id = null;
+                $return = ['assigned_user' => null];
+
+                // if (Auth::user()->isAdmin() || (int)$hr->assigned_user_id === (int)Auth::user()->id) {
+                //     $hr->assigned_user_id = null;
+                //     $return = ['assigned_user' => null];
+                // } else {
+                //     return ['success'=>false, 'error'=>'Doar voluntarul care a preluat cererea sau un administrator pot face această modificare.'];
+                // }
                 break;
         }
 

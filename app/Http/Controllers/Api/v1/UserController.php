@@ -49,7 +49,7 @@ class UserController extends Controller
         $request->validate([
             "name" => 'required|string',
             "phone_number" => 'required|string|max:10|unique:users',
-            "email" => 'required|email|unique:users',
+            "email" => 'sometimes|email|unique:users',
             "role_type_id" => 'required',
             'password' => 'required|string'
         ]);
@@ -112,6 +112,14 @@ class UserController extends Controller
      */
     public function update(Request $request, $id)
     {
+
+        $request->validate([
+            "name" => 'required|string',
+            "phone_number" => 'required|string|max:10|unique:users',
+            "email" => 'sometimes|email|unique:users',
+            "role_type_id" => 'required'
+        ]);
+
         $u = User::find($id);
 
         $u->name = $request->post('name');
