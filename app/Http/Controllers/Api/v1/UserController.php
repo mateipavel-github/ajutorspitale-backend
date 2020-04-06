@@ -115,8 +115,8 @@ class UserController extends Controller
 
         $request->validate([
             "name" => 'required|string',
-            "phone_number" => 'required|string|max:10|unique:users',
-            "email" => 'sometimes|email|unique:users',
+            "phone_number" => 'required|string|max:10|unique:users,phone_number,' . $id,
+            "email" => 'sometimes|email|unique:users,email,' . $id,
             "role_type_id" => 'required'
         ]);
 
