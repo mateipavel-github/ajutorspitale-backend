@@ -49,7 +49,6 @@ class UserController extends Controller
         $request->validate([
             "name" => 'required|string',
             "phone_number" => 'required|string|max:10|unique:users',
-            "email" => 'sometimes|email|unique:users',
             "role_type_id" => 'required',
             'password' => 'required|string'
         ]);
@@ -116,7 +115,6 @@ class UserController extends Controller
         $request->validate([
             "name" => 'required|string',
             "phone_number" => 'required|string|max:10|unique:users',
-            "email" => 'sometimes|email|unique:users',
             "role_type_id" => 'required'
         ]);
 
