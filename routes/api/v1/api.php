@@ -55,6 +55,7 @@ Route::middleware("auth:api")->resource('request-notes', 'Api\v1\HelpRequestNote
 Route::get('metadata/medical-units', 'Api\v1\MetadataController@medicalUnits');
 
 Route::middleware("auth:api")->get('stats/by-county', 'Api\v1\StatsController@byCounty');
+Route::middleware("auth:api")->get('stats/all', 'Api\v1\StatsController@all');
 
 // these routes should be removed after import
 // if(env('APP_ENV')==='local') {
