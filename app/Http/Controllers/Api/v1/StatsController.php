@@ -46,7 +46,7 @@ class StatsController extends Controller
         $this->init();
 
         $result = [];
-        $statuses = [];
+        $statuses = ['approved','processed'];
 
         $counties = $this->associateBy($this->counties, 'id');
         $needs = $this->associateBy($this->needTypes, 'id');
@@ -55,6 +55,13 @@ class StatsController extends Controller
         foreach($this->requestStatusTypes as $ps) {
             if(in_array($ps['slug'], $statuses)) {
                 $statusSelectionIds[] = $ps['id'];
+            }
+        }
+
+        $approvedStatusId = 0;
+        foreach($this->requestStatusTypes as $ps) {
+            if($ps['slug']==='approved') {
+                $approvedStatusId = $ps['id'];
             }
         }
 
@@ -86,7 +93,8 @@ class StatsController extends Controller
             
             $counties[$aggregateNeed->county_id]['needs'][] = [
                 'name' => $needs[$aggregateNeed->need_type_id]['label'],
-                'amount' => $aggregateNeed->quantity
+                'amount' => $aggregateNeed->quantity,
+                'standard' => true
             ];
         }
 
@@ -99,6 +107,19 @@ class StatsController extends Controller
 
         foreach($requestCount as $rc) {
             $counties[$rc->county_id]['nr_requests'] = $rc->requestCount;
+        }
+
+        //other needs pentru "alte nevoi" neprocesate
+        $requestsNotProcessed = DB::table($this->tables['hr'])->where('status', $approvedStatusId)->get();
+        foreach($requestsNotProcessed as $r) {
+            $otherNeeds = explode("\n", $r->other_needs);
+            foreach($otherNeeds as $otherNeed) {
+                $counties[$r->county_id]['needs'][] = [
+                    'name' => $otherNeed,
+                    'quanitity' => 1,
+                    'standard' => false
+                ];
+            }
         }
 
         foreach($counties as $id => $data) {
