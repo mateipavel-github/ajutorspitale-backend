@@ -19,7 +19,16 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'],
+    'allowed_origins' => [
+        'http://localhost:4200',
+        'http://ajutorspitale.local',
+        'https://ajutorspitale.local',
+        'https://ajutor-spitale-api.herokuapp.com',
+        'https://cereri.ajutorspitale.ro',
+        'https://ajutorspitale-entreprenation.firebaseapp.com/',
+        'https://ajutorspitale.ro',
+        'https://nevoi.ajutorspitale.ro',
+    ],
 
     'allowed_origins_patterns' => [],
 
