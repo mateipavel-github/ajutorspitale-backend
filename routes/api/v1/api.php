@@ -38,6 +38,13 @@ Route::group(['prefix' => 'system'], function() {
 Route::middleware("auth:api")->resource('requests', 'Api\v1\HelpRequestController', ['except' => ['store']]);
 Route::put('requests', 'Api\v1\HelpRequestController@store');
 
+/* offers */
+Route::middleware("auth:api")->resource('offers', 'Api\v1\HelpOfferController', ['except' => ['store']]);
+Route::put('offers', 'Api\v1\HelpOfferController@store');
+
+/* offers */
+Route::middleware("auth:api")->resource('deliveries', 'Api\v1\DeliveryController');
+
 Route::middleware("auth:api")->post('requests/mass-assign-to-user', 'Api\v1\HelpRequestController@massAssignToCurrentUser');
 
 Route::middleware("auth:api")->resource('changeRequests', 'Api\v1\HelpRequestChangeController', ['except' => ['store']]);
