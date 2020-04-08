@@ -135,7 +135,7 @@ class UserController extends Controller
         if ($success) {
             return response()->json([
                 "data" => [
-                    'item' => new UserResource($u)
+                    'item' => new UserResource(User::with('role')->find($id))
                 ],
                 "message" => __("User updated"),
                 "success" => true
