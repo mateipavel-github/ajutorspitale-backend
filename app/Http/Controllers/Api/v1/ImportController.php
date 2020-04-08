@@ -8,6 +8,7 @@ use App\HelpRequestChangeNeed;
 use App\HelpRequestNote;
 use App\Http\Controllers\Controller;
 
+use App\MedicalUnit;
 use App\MetadataChangeType;
 use App\MetadataCounty;
 use App\MetadataMedicalUnitType;
@@ -18,6 +19,7 @@ use App\User;
 use Carbon\Carbon;
 use Doctrine\DBAL\Query\QueryException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -64,7 +66,7 @@ class ImportController extends Controller
                 dd($header, $data, $exception);
             }
         }
-    
+
         //populating the other_needs
         $this->populateRequestNeeds();
     }
@@ -212,5 +214,69 @@ class ImportController extends Controller
                 }
             }
         }
+    }
+
+    public function medicalUnits()
+    {
+        $counties = MetadataCounty::all();
+        foreach ($counties as $county) {
+            $countyLabelsToIds[strtolower(str_replace(explode(',', 'â,ă,î,ț,ș,Ă,Î,Ș,Ț'), explode(',', 'a,a,i,t,s,A,I,S,T'), $county->label))] = $county->id;
+        }
+
+
+        $handle = fopen(resource_path('/csv/spitale_de_stat.csv'), 'r');
+        $header = fgetcsv($handle);
+        $table_header = array_splice($header, 3, 16);
+        $units_not_inserted = [];
+        $medical_unit_types['judetean'] = DB::table('metadata_medical_unit_types')->where(['label' => 'spital județean de stat'])->first();
+        $medical_unit_types['orasanesc'] = DB::table('metadata_medical_unit_types')->where(['label' => 'spital orășenesc de stat'])->first();
+
+        while (($data = fgetcsv($handle)) !== FALSE) {
+            $existing_medical_unit = MedicalUnit::where(['government_id' => $data[0]])->first();
+            if (empty($existing_medical_unit)) {
+                $units_not_inserted[] = $data;
+                continue;
+            }
+            $existing_medical_unit->name_without_diacritics = $data[2];
+            $existing_medical_unit->name_without_council = $data[5];
+            $existing_medical_unit->latitude = $data[14];
+            $existing_medical_unit->longitude = $data[15];
+            $existing_medical_unit->facebook_page = $data[9];
+            $existing_medical_unit->website = $data[7];
+            $existing_medical_unit->address = $data[13];
+            if (empty($existing_medical_unit->county_id) && $data[1] !== "RETEA SANITARA PROPR" && !empty($data[1])) {
+                //county names are not normalized... missing hyphen on some; this is an exception
+                if ($data[1] === "Caras Severin") {
+                    $data[1] = "caras-severin";
+                }
+                if ($data[1] === "Satu Mare") {
+                    $data[1] = "satu-mare";
+                }
+                $existing_medical_unit->county_id = isset($countyLabelsToIds[strtolower($data[1])]) ? (int)$countyLabelsToIds[strtolower($data[1])] : null;
+                $existing_medical_unit->county = $data[1];
+            }
+            if (empty($existing_medical_unit->medical_unit_type_id) && !empty($data['6'])) {
+                $csv_medical_unit_type_name = strtolower(str_replace(explode(',', 'â,ă,î,ț,ș,Ă,Î,Ș,Ț'), explode(',', 'a,a,i,t,s,A,I,S,T'), $data['6']));
+                if (empty($medical_unit_types[$csv_medical_unit_type_name])) {
+                    $db_medical_unit_types = DB::table('metadata_medical_unit_types')->where('label', "LIKE", "%" . $csv_medical_unit_type_name . "%")->get();
+                    if ($db_medical_unit_types->isEmpty() || $db_medical_unit_types->count() > 1) {
+                        dd(__("Something is wrong with the medical unit types"), $db_medical_unit_types, __("Searched for"), $csv_medical_unit_type_name, $data, $data['6']);
+                    }
+                    $medical_unit_types[$csv_medical_unit_type_name] = $db_medical_unit_types->first();
+                }
+
+                $existing_medical_unit->medical_unit_type_id = $medical_unit_types[$csv_medical_unit_type_name]->id;
+            }
+            $existing_medical_unit->save();
+
+            if (empty($existing_medical_unit->county_id) && $data[1] !== "RETEA SANITARA PROPR" && !empty($data[1])) {
+                dd("could not find the county", $data[1], $existing_medical_unit, $data, $countyLabelsToIds);
+            }
+
+            if (empty($existing_medical_unit->medical_unit_type_id) && !empty($data['6'])) {
+                dd(__("Something is wrong with the medical unit types"), $csv_medical_unit_type_name);
+            }
+        }
+        dd("finished", $units_not_inserted);
     }
 }
