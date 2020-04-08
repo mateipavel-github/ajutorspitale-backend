@@ -145,20 +145,30 @@ class PostingController extends Controller
     {
         $data = $request->post();
 
-        //create new request
-        $hr = new HelpRequest;
+        //create new request | offer
+        $posting = new $this->model;
 
-        $hr->name = $data['name'];
-        $hr->job_title = $data['job_title'];
-        $hr->county_id = $data['county_id'];
-        $hr->phone_number = $data['phone_number'];
-        $hr->medical_unit_type_id = $data['medical_unit_type_id'];
-        $hr->medical_unit_name = $data['medical_unit_name'];
-        $hr->needs_text = $data['needs_text'];
-        $hr->extra_info = $data['extra_info'];
-        $hr->user_id = $request->user('api') ? $request->user('api')->id : null;
+        $posting->name = $data['name'];
+        $posting->job_title = $data['job_title'];
+        $posting->phone_number = $data['phone_number'];
+        $posting->medical_unit_name = $data['medical_unit_name'];
+        $posting->medical_unit_type_id = $data['medical_unit_type_id'];
+        $posting->extra_info = $data['extra_info'];
+        $posting->needs_text = $data['needs_text'];
+    
+        switch( $this->postingType ) {
+            case 'request':
+                $posting->county_id = $data['county_id'];
+                break;
+            case 'offer':
+                $posting->county_ids = $data['county_ids'];
+                break;
+        }
 
-        $hr->saveWithChanges(['change_type_id' => 1, 'changes' => $hr->toArray()]);
+        $posting->user_id = $request->user('api') ? $request->user('api')->id : null;
+
+        //new posting status
+        $posting->saveWithChanges(['change_type_id' => 1, 'changes' => $posting->toArray()]);
 
         // return the new request so that the angular app can reload
         return [

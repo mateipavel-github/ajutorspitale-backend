@@ -25,7 +25,7 @@ return [
         'https://ajutorspitale.local',
         'https://ajutor-spitale-api.herokuapp.com',
         'https://cereri.ajutorspitale.ro',
-        'https://ajutorspitale-entreprenation.firebaseapp.com/',
+        'https://ajutorspitale-entreprenation.firebaseapp.com',
         'https://ajutorspitale.ro',
         'https://nevoi.ajutorspitale.ro',
     ],

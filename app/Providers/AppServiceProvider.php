@@ -29,16 +29,6 @@ class AppServiceProvider extends ServiceProvider
 
         Schema::defaultStringLength(191);
 
-        if(env('DEBUG_SQL', false)) {
-            \DB::listen(function ($query) {
-                \Log::info(
-                    '[SQL]: '.$query->sql,
-                    $query->bindings,
-                    $query->time
-                );
-            });
-        }
-
         HelpRequestChange::observe(HelpRequestChangeObserver::class);
 
     }
