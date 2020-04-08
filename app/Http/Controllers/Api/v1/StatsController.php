@@ -72,13 +72,12 @@ class StatsController extends Controller
         $statusSelectionSlugs = ['approved','processed'];
         $statusSelectionIds = $this->getStatusIdsFromSlugs($statusSelectionSlugs);
         
-        $aggregateNeedsQuery = DB::table($this->tables['hrcn'])
-            ->join(
-                $this->tables['hrc'], 
-                $this->tables['hrc'].'.id', '=', $this->tables['hrcn'].'.help_request_change_id'
-            )->join(
-                $this->tables['hr'],
-                $this->tables['hr'].'.id', '=', $this->tables['hrc'].'.help_request_id'
+        $aggregateNeedsQuery = DB::table($this->tables['hr'])
+            ->leftJoin($this->tables['hrc'], 
+                $this->tables['hrc'].'.help_request_id', '=', $this->tables['hr'].'.id'
+            )->leftjoin(
+                $this->tables['hrcn'], 
+                $this->tables['hrcn'].'.help_request_change_id', '=', $this->tables['hrc'].'.id'
             )->leftJoin(
                 $this->tables['mu'],
                 $this->tables['hr'].'.medical_unit_id', '=', $this->tables['mu'].'.id'
@@ -121,7 +120,7 @@ class StatsController extends Controller
                     'medical_unit_id' => $an->medical_unit_id,
                     'medical_unit_name' => $an->medical_unit_name,
                     'official_medical_unit_name' => $an->official_medical_unit_name,
-                    'status' => $statuses[$an->status]['label'],
+                    'status' => $statuses[$an->status]['slug'],
                     'needs' => []
                 ];
 
@@ -137,12 +136,14 @@ class StatsController extends Controller
                 }
 
             }
-            
-            $result[$currentIndex]['needs'][] = [
-                'name' => $needTypes[$an->need_type_id]['label'],
-                'amount' => $an->quantity,
-                'standard' => true
-            ];
+
+            if($an->need_type_id) {
+                $result[$currentIndex]['needs'][] = [
+                    'name' => $needTypes[$an->need_type_id]['label'],
+                    'amount' => $an->quantity,
+                    'standard' => true
+                ];
+            }
 
         }
 
