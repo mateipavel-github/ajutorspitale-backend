@@ -117,25 +117,19 @@ class StatsController extends Controller
         $this->init();
 
         $result = [];
-        $statuses = ['approved','processed'];
+        $statusSelectionIds = Metadata::getRequestStatusIdsFromSlugs(['approved','processed']);
 
-        $counties = $this->associateBy($this->counties, 'id');
-        $needTypes = $this->associateBy($this->needTypes, 'id');
-
-        $statusSelectionIds = [];
-        $statusSelectionIds = $this->getStatusIdsFromSlugs($statuses);
-
-        $aggregateNeedsQuery = DB::table($this->tables['hrcn'])
-            ->join(
-                $this->tables['hrc'], 
-                $this->tables['hrc'].'.id', '=', $this->tables['hrcn'].'.help_request_change_id')
-            ->join(
-                $this->tables['hr'],
-                $this->tables['hr'].'.id', '=', $this->tables['hrc'].'.help_request_id'
-            )
-            ->select(
+        $aggregateNeedsQuery = DB::table($this->tables['hr'])
+            ->whereNotNull($this->tables['hr'].'.county_id')
+            ->leftJoin($this->tables['pc'], function($join) {
+                $join->on($this->tables['hr'].'.id', '=', $this->tables['pc'].'.item_id');
+                $join->on($this->tables['pc'].'.item_type', '=', DB::raw("'" . (new HelpRequest)->getPostingType('sql') . "'"));
+            })->leftjoin(
+                $this->tables['pcn'],
+                $this->tables['pc'].'.id', '=', $this->tables['pcn'].'.posting_change_id'
+            )->select(
                 $this->tables['hr'].'.county_id', 
-                $this->tables['hrcn'].'.need_type_id', 
+                $this->tables['pcn'].'.need_type_id',
                 DB::raw('SUM(quantity) as quantity')
             );
         
@@ -143,23 +137,33 @@ class StatsController extends Controller
             $aggregateNeedsQuery = $aggregateNeedsQuery->whereIn($this->tables['hr'].'.status', $statusSelectionIds);
         }
 
-        $aggregateNeedsQuery = $aggregateNeedsQuery->groupBy($this->tables['hrcn'].'.need_type_id', $this->tables['hr'].'.county_id');
+        $aggregateNeedsQuery = $aggregateNeedsQuery
+            ->groupBy($this->tables['hr'].'.county_id', $this->tables['pcn'].'.need_type_id');
+            
         
         $aggregateNeeds = $aggregateNeedsQuery->get();
 
-        foreach($aggregateNeeds as $aggregateNeed) {
-            if(!isset($counties[$aggregateNeed->county_id]['needs']))
-                $counties[$aggregateNeed->county_id]['needs'] = [];
+        foreach($aggregateNeeds as $an) {
+            if($an->need_type_id) {  
+                
+                if(!isset($counties[$an->county_id])) {
+                    $counties[$an->county_id] = [];
+                }
+
+                if(!isset($counties[$an->county_id]['needs']))
+                $counties[$an->county_id]['needs'] = [];
             
-            $counties[$aggregateNeed->county_id]['needs'][] = [
-                'name' => $needTypes[$aggregateNeed->need_type_id]['label'],
-                'amount' => $aggregateNeed->quantity,
-                'standard' => true
-            ];
+                $counties[$an->county_id]['needs'][] = [
+                    'name' => Metadata::getNeedTypeById($an->need_type_id)->label,
+                    'amount' => $an->quantity,
+                    'standard' => true
+                ];
+            }
         }
 
         $requestCountQuery = DB::table($this->tables['hr'])
-                                ->select('county_id', DB::raw('COUNT(*) as requestCount'));
+                                ->select('county_id', DB::raw('COUNT(*) as requestCount'))
+                                ->whereNotNull('county_id');
         if(count($statusSelectionIds)>0) {
             $requestCountQuery = $requestCountQuery->whereIn('status', $statusSelectionIds);
         }
@@ -170,7 +174,10 @@ class StatsController extends Controller
         }
 
         //other needs pentru "alte nevoi" neprocesate
-        $requestsNotProcessed = DB::table($this->tables['hr'])->where('status', $this->approvedStatusId)->get();
+        $requestsNotProcessed = DB::table($this->tables['hr'])
+                                    ->where('status', $this->approvedStatusId)
+                                    ->whereNotNull('county_id')
+                                    ->get();
         foreach($requestsNotProcessed as $r) {
             $otherNeeds = explode("\n", $r->other_needs);
             foreach($otherNeeds as $otherNeed) {
@@ -184,9 +191,11 @@ class StatsController extends Controller
             }
         }
 
+        
+
         foreach($counties as $id => $data) {
             $result[] = [
-                'county' => isset($data['label']) ? $data['label'] : '',
+                'county' => Metadata::getCountyById($id)->label,
                 'needs' => isset($data['needs']) ? $data['needs'] : [],
                 'nr_requests' => isset($data['nr_requests']) ? $data['nr_requests'] : 0
             ];
