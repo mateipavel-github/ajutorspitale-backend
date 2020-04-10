@@ -22,6 +22,11 @@ class DeliveriesSolutionsContributors extends Migration
         // delivery_help_offers (id, help_offer_id, delivery_id)
         // delivery_needs (delivery_id, need_type_id, quantity)
 
+        Schema::dropIfExists('help_offers');
+        Schema::dropIfExists('help_offer_counties');
+        Schema::dropIfExists('deliveries');
+        Schema::dropIfExists('delivery_help_requests');
+        Schema::dropIfExists('delivery_help_offers');
 
         Schema::create('help_offers', function (Blueprint $table) {
             $table->charset = 'utf8';
@@ -36,9 +41,14 @@ class DeliveriesSolutionsContributors extends Migration
             $table->string('organization_name')->nullable();
             $table->string('medical_unit_id')->nullable();
             $table->string('medical_unit_name')->nullable();
+            $table->integer('assigned_user_id')->nullable();
             $table->integer('user_id')->unsigned()->nullable();
             $table->text('other_needs')->nullable();
+            $table->text('current_needs')->nullable();
             $table->text('extra_info')->nullable();
+            $table->text('needs_text')->nullable();
+            $table->integer('status')->unsigned();            
+
         });
 
         Schema::create('help_offer_counties', function (Blueprint $table) {
@@ -50,35 +60,6 @@ class DeliveriesSolutionsContributors extends Migration
             $table->softDeletes();
             $table->integer('county_id')->unsigned();
             $table->integer('help_offer_id')->unsigned();
-        });
-
-        Schema::create('help_offer_changes', function (Blueprint $table) {
-            $table->charset = 'utf8';
-            $table->collation = 'utf8_unicode_ci';
-
-            $table->id();
-            $table->timestamps();
-            $table->softDeletes();
-            $table->integer('help_offer_id')->unsigned();
-            $table->integer('change_type_id');
-            $table->text('change_log')->nullable();
-            $table->integer('user_id')->unsigned()->nullable();
-            $table->text('user_comment')->nullable();
-            $table->set('status', ['new','approved','rejected','in_progress'])->default('new');
-        });
-
-        Schema::create('help_offer_change_need', function (Blueprint $table) {
-
-            $table->charset = 'utf8';
-            $table->collation = 'utf8_unicode_ci';
-            $table->id();
-            $table->timestamps();
-            $table->softDeletes();
-            $table->integer('help_offer_change_id')->unsigned();
-            $table->integer('need_type_id')->unsigned();
-            $table->integer('on_demand')->unsigned()->comment('If the offer is open-ended/not fixed amount');
-            $table->integer('quantity')->unsigned();
-
         });
 
         Schema::create('deliveries', function (Blueprint $table) {
@@ -125,8 +106,8 @@ class DeliveriesSolutionsContributors extends Migration
     {
         //
         Schema::dropIfExists('help_offers');
-        Schema::dropIfExists('help_offer_needs');
-        Schema::dropIfExists('help_offer_changes');
+        Schema::dropIfExists('help_offer_counties');
+
         Schema::dropIfExists('deliveries');
         Schema::dropIfExists('delivery_help_requests');
         Schema::dropIfExists('delivery_help_offers');

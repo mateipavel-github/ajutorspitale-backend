@@ -15,7 +15,7 @@ class Posting extends Model
     protected $cast = ['current_needs'=>'array'];
 
     protected $_editableFields = [
-        'status', 'medical_unit_id', 'medical_unit_type_id',
+        'status', 'medical_unit_id',
         'medical_unit_name', 'name', 'phone_number', 'job_title',
         'needs_text', 'extra_info', 'other_needs'
     ];

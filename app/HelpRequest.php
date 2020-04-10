@@ -21,7 +21,7 @@ class HelpRequest extends Posting
         $this->with = array_merge($this->with, []);
         $this->fillable = array_merge($this->fillable, []);
         $this->casts = array_merge($this->casts, []);
-        $this->_editableFields = array_merge($this->_editableFields, ['county_id']);
+        $this->_editableFields = array_merge($this->_editableFields, ['county_id','medical_unit_type_id']);
     }
 
     public function medical_unit_type() {

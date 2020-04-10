@@ -41,7 +41,7 @@ class PostingController extends Controller
                 break;
             case 'offer':
                 $this->model = 'App\HelpOffer';
-                $this->resource = 'App\Http\Resources\OfferRequest';
+                $this->resource = 'App\Http\Resources\HelpOffer';
                 break;
         }
     }
