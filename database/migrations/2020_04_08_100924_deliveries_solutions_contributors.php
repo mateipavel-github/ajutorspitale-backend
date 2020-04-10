@@ -34,12 +34,22 @@ class DeliveriesSolutionsContributors extends Migration
             $table->string('phone_number');
             $table->string('job_title')->nullable();
             $table->string('organization_name')->nullable();
-            $table->string('county_ids')->nullable();
             $table->string('medical_unit_id')->nullable();
             $table->string('medical_unit_name')->nullable();
+            $table->integer('user_id')->unsigned()->nullable();
             $table->text('other_needs')->nullable();
             $table->text('extra_info')->nullable();
+        });
 
+        Schema::create('help_offer_counties', function (Blueprint $table) {
+            $table->charset = 'utf8';
+            $table->collation = 'utf8_unicode_ci';
+
+            $table->id();
+            $table->timestamps();
+            $table->softDeletes();
+            $table->integer('county_id')->unsigned();
+            $table->integer('help_offer_id')->unsigned();
         });
 
         Schema::create('help_offer_changes', function (Blueprint $table) {

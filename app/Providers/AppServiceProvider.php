@@ -4,11 +4,12 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
-use App\HelpRequestChange;
-use App\Observers\HelpRequestChangeObserver;
+use App\Observers\PostingChangeObserver; 
+use App\PostingChange;
 
 class AppServiceProvider extends ServiceProvider
 {
+
     /**
      * Register any application services.
      *
@@ -17,6 +18,9 @@ class AppServiceProvider extends ServiceProvider
     public function register()
     {
         //
+        $this->app->singleton('metadata', function ($app) {
+            return new \App\Helpers\MetadataHelper;
+        });
     }
 
     /**
@@ -29,7 +33,7 @@ class AppServiceProvider extends ServiceProvider
 
         Schema::defaultStringLength(191);
 
-        HelpRequestChange::observe(HelpRequestChangeObserver::class);
+        PostingChange::observe(PostingChangeObserver::class);
 
     }
 }

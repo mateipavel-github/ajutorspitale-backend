@@ -4,17 +4,28 @@ namespace App\Http\Controllers\Api\v1;
 
 use App\Http\Controllers\Controller;
 
+//models
 use App\User;
+use App\HelpRequest;
+use App\Note;
+use App\PostingChange;
+
+//resoureces
+use \App\Http\Resources\HelpRequest as HelpRequestResource;
+use App\Http\Resources\User as UserResource;
+use App\Http\Resources\HelpRequestCollection;
+
+//helpers
+use App\Helpers\ArrayHelper;
+use Metadata; //there's an alias for this in config/app.php
+
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use App\HelpRequest;
-use App\Http\Resources\HelpRequestCollection;
-use \App\Http\Resources\HelpRequest as HelpRequestResource;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
-use App\Http\Resources\User as UserResource;
 use Illuminate\Support\Facades\Log;
-use App\MetadataRequestStatusType;
+
+
 
 class PostingController extends Controller
 {
@@ -22,35 +33,28 @@ class PostingController extends Controller
     protected $per_page = 20;
 
     public function setPostingType($type) {
-        $postingType = $type;
+        $this->postingType = $type;
         switch($type) {
             case 'request':
                 $this->model = 'App\HelpRequest';
+                $this->resource = 'App\Http\Resources\HelpRequest';
                 break;
             case 'offer':
                 $this->model = 'App\HelpOffer';
+                $this->resource = 'App\Http\Resources\OfferRequest';
                 break;
         }
     }
 
-    public function getStatusSelectionIds($statusSelection) {
+    private function _getStatusSelectionIds($statusSelection) {
         if (!is_array($statusSelection)) {
             $statusSelection = explode(',', $statusSelection);
         }
-
-        $statusSelectionIds = [];
         if(is_int($statusSelection[0])) {
-            $statusSelectionIds = $statusSelection;
-        } else {
-            $possibleStatuses = MetadataRequestStatusType::all();
-            foreach($possibleStatuses as $ps) {
-                if(in_array($ps->slug, $statusSelection)) {
-                    $statusSelectionIds[] = $ps['id'];
-                }
-            }
-        }
-        
-        return $statusSelectionIds;
+            return $statusSelection;
+         } else { 
+            return $this->type==='request' ? Metadata::getRequestStatusIdsFromSlugs($statusSelection) : Metadata::getOfferStatusIdsFromSlugs($statusSelection);
+         }
     }
 
     public function massAssignToCurrentUser(Request $request)
@@ -103,9 +107,7 @@ class PostingController extends Controller
         }
 
         if ($statusSelection = $request->get("status")) {
-            $statusSelectionIds = $this->getStatusSelectionIds($statusSelection);
-
-            $list->whereIn('status', $statusSelectionIds);
+            $list->whereIn('status', $this->_getStatusSelectionIds($statusSelection));
         }
 
         if ($request->get("medical_unit_name")) {
@@ -148,32 +150,26 @@ class PostingController extends Controller
         //create new request | offer
         $posting = new $this->model;
 
-        $posting->name = $data['name'];
-        $posting->job_title = $data['job_title'];
-        $posting->phone_number = $data['phone_number'];
-        $posting->medical_unit_name = $data['medical_unit_name'];
-        $posting->medical_unit_type_id = $data['medical_unit_type_id'];
-        $posting->extra_info = $data['extra_info'];
-        $posting->needs_text = $data['needs_text'];
-    
-        switch( $this->postingType ) {
-            case 'request':
-                $posting->county_id = $data['county_id'];
-                break;
-            case 'offer':
-                $posting->county_ids = $data['county_ids'];
-                break;
+        $requestDataFields = $posting->getEditableFields();
+        
+        foreach($requestDataFields as $field) {
+            if(isset($data[$field])) {
+                $posting->{$field} = $data[$field];
+            }
         }
 
         $posting->user_id = $request->user('api') ? $request->user('api')->id : null;
-
-        //new posting status
-        $posting->saveWithChanges(['change_type_id' => 1, 'changes' => $posting->toArray()]);
+        $posting->status = Metadata::getRequestStatusIdFromSlug('new');
+        
+        $posting->createWithChanges(
+            Metadata::getChangeTypeIdFromSlug('new_request'),
+            isset($data['needs']) ? $data['needs'] : []
+        );
 
         // return the new request so that the angular app can reload
         return [
             'success' => true,
-            'newHelpRequest' => new HelpRequestResource($this->model::with(['changes', 'changes.needs', 'assigned_user', 'notes', 'notes.user'])->find($hr->id))
+            'new_item' => new $this->resource($this->model::with(['changes', 'changes.needs', 'assigned_user', 'notes', 'notes.user'])->find($posting->id))
         ];
 
     }
@@ -183,11 +179,11 @@ class PostingController extends Controller
      *
      * @param Request $request
      * @param int $id
-     * @return HelpRequestResource
+     * @return HelpRequestResource | HelpOfferResource
      */
     public function show(Request $request, $id)
     {
-        return new HelpRequestResource($this->model::with(['changes', 'changes.needs', 'assigned_user', 'medical_unit'])->find($id));
+        return new $this->resource($this->model::with(['changes', 'changes.needs', 'assigned_user', 'medical_unit'])->find($id));
     }
 
     /**
@@ -197,40 +193,88 @@ class PostingController extends Controller
      * @param int $id
      * @return array
      */
-    public function update(Request $request, $id)
-    {
-        $action = $request->get('action');
 
-        $hr = $this->model::find($id);
-        switch ($action) {
-            case 'changeStatus':
-                $hr->status = $request->post('status');
-                // if (Auth::user()->isAdmin() || (int)$hr->assigned_user_id === (int)Auth::user()->id) {
-                //     $hr->status = $request->post('status');
-                // } else {
-                //     return ['success'=>false, 'error'=>'Cererea a fost preluată de alt voluntar. Doar el sau un administrator pot schimba statusul.'];
-                // }
-                break;
-            case 'assignCurrentUser':
-                $hr->assigned_user_id = $request->user('api')->id;
-                $return = ['assigned_user' => new UserResource(Auth::user())];
-                break;
-            case 'unassignCurrentUser':
-                $hr->assigned_user_id = null;
-                $return = ['assigned_user' => null];
+    public function update(Request $request, $id) {
+        
+        $return = [
+            'success' => false,
+            'data' => []
+        ];
 
-                // if (Auth::user()->isAdmin() || (int)$hr->assigned_user_id === (int)Auth::user()->id) {
-                //     $hr->assigned_user_id = null;
-                //     $return = ['assigned_user' => null];
-                // } else {
-                //     return ['success'=>false, 'error'=>'Doar voluntarul care a preluat cererea sau un administrator pot face această modificare.'];
-                // }
-                break;
+        $data = $request->post();
+
+        $posting = $posting = $this->model::find($id);
+        
+        $requestDataFields = $posting->getEditableFields();
+        
+        foreach($requestDataFields as $field) {
+            if(isset($data[$field])) {
+                $posting->{$field} = $data[$field];
+            }
         }
 
-        $hr->save();
-        $return['success'] = true;
-        return $return;
+        // @frontTodo move all updates to /update route
+        $action = $request->get('action');
+        if($action) {
+            $data['change_data'] = ['change_type_id' => Metadata::getChangeTypeIdFromSlug('error')];
+            switch ($action) {
+                case 'changeStatus':
+                    // already processed above ($posting->status = $request->post('status'))
+                    break;
+                case 'assignCurrentUser':
+                    $posting->assigned_user_id = $request->user('api')->id;
+                    $return['data']['assigned_user'] = new UserResource(Auth::user());
+                    break;
+                case 'unassignCurrentUser':
+                    $posting->assigned_user_id = null;
+                    $return['data']['assigned_user'] = null;
+                    break;
+            }
+        }
+        
+        $changes = [];
+
+        if($posting->isDirty()) {
+            //see what's modified so we can store it for auditing purposes in the change_log field of posting_changes
+            $changes = $posting->getDirty();
+            //make sure we can save before adding the change
+            $postingSaved = $posting->save();
+
+            if($postingSaved) {
+                $return['success'] = true;
+            } 
+        }
+
+        if(isset($data['needs']) && !empty($data['needs'])) {
+            $changes['needs'] = true;
+            $needsToAdd = $data['needs'];
+        }
+        
+        // @frontTodo set change_data separately into a FormGroup
+        //create new change
+        $pc = new PostingChange;
+        $pc->user_id = $request->user('api') ? $request->user('api')->id : null;
+        $pc->change_type_id = $data['change_data']['change_type_id'];
+        $pc->user_comment = isset($data['change_data']['user_comment']) ? $data['change_data']['user_comment'] : null;
+        $posting->changes()->save($pc);
+
+        //add needs
+        if(isset($needsToAdd)) {
+            $pc->needs()->createMany($needsToAdd);
+            $return['success'] = true;
+        }
+
+        //save request change again, to trigger observer so that the current_needs of Posting get updated.
+        $pc->change_log = $changes;
+        $pc->save();
+
+        // return the new request so that the angular app can reload
+        return !empty($return['data']) ? $return : [
+            'success' => $return['success'],
+            'data' => [
+                'item' => new $this->resource($this->model::with(['changes','changes.needs','assigned_user'])->find($posting->id))
+            ]
+        ];
     }
 
     /**
@@ -242,5 +286,21 @@ class PostingController extends Controller
     public function destroy($id)
     {
         //
+    }
+
+    public function addNote(Request $request, $postingId) {
+        
+        $posting = $this->model::find($postingId);
+        
+        $note = new Note(['content' => $request->post('content')]);
+        $note->user()->associate($request->user('api'));
+        $posting->notes()->save($note);
+
+        return [
+            'success' => true,
+            'data' => [
+                'new_note' => $note
+            ]
+        ];
     }
 }

@@ -5,7 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\User as UserResource;
 
-class HelpRequestChange extends JsonResource
+class PostingChange extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -17,7 +17,7 @@ class HelpRequestChange extends JsonResource
     {
         return [
             'id' => $this -> id,
-            'needs' => HelpRequestChangeNeed::collection($this -> whenLoaded('needs')),
+            'needs' => PostingChangeNeed::collection($this -> whenLoaded('needs')),
             'changes' => $this -> changes,
             'change_type_id' => $this -> change_type_id,
             'status' => $this -> status,
