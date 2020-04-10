@@ -43,7 +43,7 @@ Route::middleware("auth:api")->post('requests/mass-assign-to-user', 'Api\v1\Help
 /* offers */
 Route::middleware("auth:api")->resource('offers', 'Api\v1\HelpOfferController', ['except' => ['store']]);
 Route::put('offers', 'Api\v1\HelpOfferController@store');
-Route::middleware("auth:api")->put('offers/{id}/add-note', 'Api\v1\HelpRequestController@addNote');
+Route::middleware("auth:api")->put('offers/{id}/add-note', 'Api\v1\HelpOfferController@addNote');
 
 /* deliveries */
 Route::middleware("auth:api")->resource('deliveries', 'Api\v1\DeliveryController');

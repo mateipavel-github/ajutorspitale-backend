@@ -45,7 +45,7 @@ class MetadataController extends Controller
     {
 
         $return = [];
-        $list = ['need_types', 'counties','medical_unit_types','change_types','user_role_types','request_status_types'];
+        $list = ['need_types', 'counties','medical_unit_types','change_types','user_role_types','request_status_types','offer_status_types','delivery_status_types'];
         foreach($list as $metadataType) {
             $return[$metadataType] = Metadata::getSorted($metadataType, 'label')->all();
         }
@@ -64,6 +64,8 @@ class MetadataController extends Controller
             case 'change_types': $type .= 'MetadataChangeType'; break;
             case 'user_role_types': $type .= 'MetadataUserRoleType'; break;
             case 'request_status_types': $type .= 'MetadataRequestStatusType'; break;
+            case 'offer_status_types': $type .= 'MetadataOfferStatusType'; break;
+            case 'delivery_status_types': $type .= 'MetadataDeliveryStatusType'; break;
             default: return ['success'=>false, 'error'=>'Metadata type not recognized']; break;
         }
 
@@ -78,7 +80,7 @@ class MetadataController extends Controller
 
         $t->label = $request->post('label');
 
-        $typesWithSlug = ['user_role_types', 'change_types', 'medical_unit_types', 'request_status_types', 'counties', 'need_types'];
+        $typesWithSlug = ['user_role_types', 'change_types', 'medical_unit_types', 'request_status_types', 'offer_status_types', 'delivery_status_types', 'counties', 'need_types'];
 
         if(in_array($request->post('metadata_type'), $typesWithSlug)) {
             $t->slug = $request->post('slug');

@@ -14,8 +14,6 @@ class MakeNoteGeneric extends Migration
     public function up()
     {
         //
-
-
         Schema::rename('help_request_notes', 'notes');
         Schema::table('notes', function (Blueprint $table) {
             $table->integer('help_request_id')

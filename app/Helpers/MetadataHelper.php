@@ -7,6 +7,8 @@ use App\MetadataMedicalUnitType;
 use App\MetadataRequestStatusType;
 use App\MetadataUserRoleType;
 use App\MetadataNeedType;
+use App\MetadataOfferStatusType;
+use App\MetadataDeliveryStatusType;
 
 class MetadataHelper {
 
@@ -32,6 +34,22 @@ class MetadataHelper {
     public function getRequestStatusIdFromSlug($slug) {
         return $this->request_status_types->firstWhere('slug', $slug)['id'];
     }
+
+    public function getOfferStatusIdsFromSlugs($slugs) {
+        return $this->offer_status_types->whereIn('slug', $slugs)->pluck('id');
+    }
+    public function getOfferStatusIdFromSlug($slug) {
+        return $this->offer_status_types->firstWhere('slug', $slug)['id'];
+    }
+
+    public function getDeliveryStatusIdsFromSlugs($slugs) {
+        return $this->delivery_status_types->whereIn('slug', $slugs)->pluck('id');
+    }
+    public function getDeliveryStatusIdFromSlug($slug) {
+        return $this->delivery_status_types->firstWhere('slug', $slug)['id'];
+    }
+
+
     public function getSorted($metadataType, $sortKey) {
         return $this->$metadataType->sortBy($sortKey)->values();
     }
@@ -69,6 +87,12 @@ class MetadataHelper {
             case 'request_status_types': 
                 return MetadataRequestStatusType::all();
                 break;
+            case 'offer_status_types': 
+                return MetadataOfferStatusType::all();
+            break;
+            case 'delivery_status_types': 
+                return MetadataDeliveryStatusType::all();
+            break;
             case 'counties': 
                 return MetadataCounty::all();
                 break;

@@ -11,9 +11,9 @@ use App\Note;
 use App\PostingChange;
 
 //resoureces
-use \App\Http\Resources\HelpRequest as HelpRequestResource;
 use App\Http\Resources\User as UserResource;
 use App\Http\Resources\HelpRequestCollection;
+use App\Http\Resources\HelpOfferCollection;
 
 //helpers
 use App\Helpers\ArrayHelper;
@@ -38,10 +38,14 @@ class PostingController extends Controller
             case 'request':
                 $this->model = 'App\HelpRequest';
                 $this->resource = 'App\Http\Resources\HelpRequest';
+                $this->resourceCollection = 'App\Http\Resources\HelpRequestCollection';
+                $this->newPostingStatusId = Metadata::getRequestStatusIdFromSlug('new');
                 break;
             case 'offer':
                 $this->model = 'App\HelpOffer';
                 $this->resource = 'App\Http\Resources\HelpOffer';
+                $this->resourceCollection = 'App\Http\Resources\HelpOfferCollection';
+                $this->newPostingStatusId = Metadata::getOfferStatusIdFromSlug('new');
                 break;
         }
     }
@@ -53,7 +57,7 @@ class PostingController extends Controller
         if(is_int($statusSelection[0])) {
             return $statusSelection;
          } else { 
-            return $this->type==='request' ? Metadata::getRequestStatusIdsFromSlugs($statusSelection) : Metadata::getOfferStatusIdsFromSlugs($statusSelection);
+            return $this->postingType==='request' ? Metadata::getRequestStatusIdsFromSlugs($statusSelection) : Metadata::getOfferStatusIdsFromSlugs($statusSelection);
          }
     }
 
@@ -62,8 +66,8 @@ class PostingController extends Controller
         $howMany = $request->post('howMany');
         $userId = $request->user('api')->id;
 
-        $requestIds = $this->model::whereIn('status', $this->getStatusSelectionIds('new,approved'))->whereNull('assigned_user_id')->pluck('id')->take($howMany);
-        $this->model::whereIn('id', $requestIds)->update(array('assigned_user_id' => $userId));
+        $itemIds = $this->model::whereIn('status', $this->getStatusSelectionIds('new,approved'))->whereNull('assigned_user_id')->pluck('id')->take($howMany);
+        $this->model::whereIn('id', $itemIds)->update(array('assigned_user_id' => $userId));
 
         return ['success' => true];
     }
@@ -78,6 +82,11 @@ class PostingController extends Controller
     {
 
         $list = $this->model::select("*");
+
+        if($this->postingType==='offer') {
+            $list->with('counties');
+        }
+
         if ($request->get("per_page")) {
             $this->per_page = $request->get('per_page');
         }
@@ -102,8 +111,22 @@ class PostingController extends Controller
             $list->where(['medical_unit_type_id' => $request->get("medical_unit_type_id")]);
         }
 
-        if ($request->get("county_id")) {
-            $list->where(['county_id' => $request->get("county_id")]);
+        if ($counties = $request->get("county")) {
+            if(!is_array($counties)) { 
+                $counties = explode(',', $counties);
+            }
+            switch($this->postingType) {
+                case 'request':
+                    $list->whereIn('county_id', $counties);
+                    break;
+                case 'offer':
+                    $list->whereIn('id', function($query) use($counties) {
+                        $query->select('help_offer_id')
+                            ->from(with(new \App\HelpOfferCounty)->getTable())
+                            ->whereIn('county_id', $counties);
+                    });
+                    break;
+            }
         }
 
         if ($statusSelection = $request->get("status")) {
@@ -125,11 +148,11 @@ class PostingController extends Controller
         $list = $list->with('assigned_user')->paginate($this->per_page);
         return response()->json([
             "data" => [
-                'items' => new HelpRequestCollection($list->items()),
+                'items' => new $this->resourceCollection($list->items()),
                 'current_page' => $list->currentPage(),
                 'last_page' => $list->lastPage(),
                 'per_page' => $list->perPage(),
-                'total' => $list->total(),
+                'total' => $list->total()
             ],
             "message" => __("Got collection"),
             "success" => true
@@ -159,12 +182,22 @@ class PostingController extends Controller
         }
 
         $posting->user_id = $request->user('api') ? $request->user('api')->id : null;
-        $posting->status = Metadata::getRequestStatusIdFromSlug('new');
+
+        $posting->status = $this->newPostingStatusId;
         
         $posting->createWithChanges(
             Metadata::getChangeTypeIdFromSlug('new_request'),
             isset($data['needs']) ? $data['needs'] : []
         );
+
+        switch($this->postingType) {
+            case 'offer':
+                $counties = array_map(function($county_id) {
+                    return ['county_id'=>$county_id];
+                }, $data['counties_list']);
+                $posting->counties()->createMany($counties);
+                break;
+        }
 
         // return the new request so that the angular app can reload
         return [
@@ -243,6 +276,14 @@ class PostingController extends Controller
             if($postingSaved) {
                 $return['success'] = true;
             } 
+        }
+
+        if($this->postingType === 'offer' && isset($data['counties_list']) && !empty($data['counties_list'])) {
+            $counties = array_map(function($county_id) use ($posting) {
+                $posting->counties()->updateOrCreate(['county_id'=>$county_id]);
+            }, $data['counties_list']);
+            $changes['counties'] = true;
+            $return['success'] = true;
         }
 
         if(isset($data['needs']) && !empty($data['needs'])) {

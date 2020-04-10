@@ -26,6 +26,8 @@ class HelpOffer extends JsonResource
             'medical_unit' => $this -> medical_unit,
             'medical_unit_name' => $this -> medical_unit_name,
             'current_needs' => $this -> current_needs,
+            'organization_name' => $this -> organization_name,
+            'counties' => $this->getCountyIdsAsList($this->whenLoaded('counties')),
             'changes' => PostingChangeResource::collection($this -> whenLoaded('changes')),
             'extra_info' => $this -> extra_info,
             'needs_text' => $this -> needs_text,
@@ -35,5 +37,15 @@ class HelpOffer extends JsonResource
             'status' => $this -> status
         ];
 
+    }
+
+    public function getCountyIdsAsList($counties=[]) {
+        $return = [];
+        if($counties) {
+            foreach($counties as $c) {
+                $return[] = $c->county_id;
+            }
+        }
+        return $return;
     }
 }
