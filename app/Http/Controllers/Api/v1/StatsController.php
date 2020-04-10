@@ -6,16 +6,10 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\HelpRequest;
-use App\HelpRequestChange;
-use App\HelpRequestChangeNeed;
+use App\PostingChange;
+use App\PostingChangeNeed;
 use App\MedicalUnit;
-use App\MetadataNeedType;
-use App\MetadataCounty;
-use App\MetadataMedicalUnitType;
-use App\MetadataChangeType;
-use App\MetadataUserRoleType;
-use App\MetadataRequestStatusType;
-
+use Metadata;
 
 class StatsController extends Controller
 {
@@ -23,67 +17,33 @@ class StatsController extends Controller
     function init() {
         $this -> tables =  [
             'hr' => (new HelpRequest())->getTable(),
-            'hrc' => (new HelpRequestChange())->getTable(),
-            'hrcn' => (new HelpRequestChangeNeed())->getTable(),
+            'pc' => (new PostingChange())->getTable(),
+            'pcn' => (new PostingChangeNeed())->getTable(),
             'mu' => (new MedicalUnit())->getTable()
         ];
-        $this->needTypes = MetadataNeedType::orderBy('label')->get()->toArray();
-        $this->counties = MetadataCounty::orderBy('label')->get()->toArray();
-        $this->medicalUnitTypes = MetadataMedicalUnitType::orderBy('label')->get()->toArray();
-        $this->changeTypes = MetadataChangeType::orderBy('label')->get()->toArray();
-        $this->userRoleTypes = MetadataUserRoleType::orderBy('label')->get()->toArray();
-        $this->requestStatusTypes = MetadataRequestStatusType::orderBy('label')->get()->toArray();
 
-        $this->approvedStatusId = 0;
-        foreach($this->requestStatusTypes as $ps) {
-            if($ps['slug']==='approved') {
-                $this->approvedStatusId = $ps['id'];
-            }
-        }
-    }
-
-    public function associateBy($array, $field='id') {
-        $result = [];
-        foreach($array as $item) {
-            $result[$item[$field]] = $item;
-        }
-        return $result;
-    }
-
-    public function getStatusIdsFromSlugs($slugs) {
-        $statusSelectionIds = [];
-        foreach($this->requestStatusTypes as $ps) {
-            if(in_array($ps['slug'], $slugs)) {
-                $statusSelectionIds[] = $ps['id'];
-            }
-        }
-        return $statusSelectionIds;
+        $this->approvedStatusId = Metadata::getRequestStatusIdFromSlug('approved');
     }
 
     public function all() {
 
         $this->init();
 
-        $needTypes = $this->associateBy($this->needTypes, 'id');
-        $counties = $this->associateBy($this->counties, 'id');
-        $medicalUnitTypes = $this->associateBy($this->medicalUnitTypes, 'id');
-        $statuses = $this->associateBy($this->requestStatusTypes, 'id');
-
-        $statusSelectionSlugs = ['approved','processed'];
-        $statusSelectionIds = $this->getStatusIdsFromSlugs($statusSelectionSlugs);
+        $statusSelectionIds = Metadata::getRequestStatusIdsFromSlugs(['approved','processed']);
         
         $aggregateNeedsQuery = DB::table($this->tables['hr'])
-            ->leftJoin($this->tables['hrc'], 
-                $this->tables['hrc'].'.help_request_id', '=', $this->tables['hr'].'.id'
-            )->leftjoin(
-                $this->tables['hrcn'], 
-                $this->tables['hrcn'].'.help_request_change_id', '=', $this->tables['hrc'].'.id'
+            ->leftJoin($this->tables['pc'], function($join) {
+                $join->on($this->tables['hr'].'.id', '=', $this->tables['pc'].'.item_id');
+                $join->on($this->tables['pc'].'.item_type', '=', DB::raw("'" . (new HelpRequest)->getPostingType('sql') . "'"));
+            })->leftjoin(
+                $this->tables['pcn'],
+                $this->tables['pc'].'.id', '=', $this->tables['pcn'].'.posting_change_id'
             )->leftJoin(
                 $this->tables['mu'],
                 $this->tables['hr'].'.medical_unit_id', '=', $this->tables['mu'].'.id'
             )->select(
                 $this->tables['hr'].'.*', 
-                $this->tables['hrcn'].'.need_type_id', 
+                $this->tables['pcn'].'.need_type_id', 
                 $this->tables['mu'].'.name as official_medical_unit_name', 
                 DB::raw('SUM(quantity) as quantity')
             );
@@ -93,9 +53,10 @@ class StatsController extends Controller
         }
 
         $aggregateNeedsQuery = $aggregateNeedsQuery
-            ->groupBy($this->tables['hrcn'].'.need_type_id', $this->tables['hr'].'.id')
+            ->groupBy($this->tables['hr'].'.id', $this->tables['pcn'].'.need_type_id')
             ->orderBy($this->tables['hr'].'.id', 'desc');
-        
+
+
         $aggregateNeeds = $aggregateNeedsQuery->get();
 
         // id, created_at, county_id, county_name, medical_unit_type (the slug from metadata_medical_unit_types)
@@ -115,12 +76,12 @@ class StatsController extends Controller
                     'id' => $an->id,
                     'created_at' => $an->created_at,
                     'count_id' => $an->county_id,
-                    'county_name' => $an->county_id ? $counties[$an->county_id]['label'] : null,
-                    'medical_unit_type' => $an->medical_unit_type_id ? $medicalUnitTypes[$an->medical_unit_type_id]['slug'] : null,
+                    'county_name' => $an->county_id ? Metadata::getCountyById($an->county_id)->label : null,
+                    'medical_unit_type' => $an->medical_unit_type_id ? Metadata::getMedicalUnitTypeById($an->medical_unit_type_id)->slug : null,
                     'medical_unit_id' => $an->medical_unit_id,
                     'medical_unit_name' => $an->medical_unit_name,
                     'official_medical_unit_name' => $an->official_medical_unit_name,
-                    'status' => $statuses[$an->status]['slug'],
+                    'status' => Metadata::getRequestStatusById($an->status)->label,
                     'needs' => []
                 ];
 
@@ -129,17 +90,17 @@ class StatsController extends Controller
                     if(!empty($otherNeed)) {
                         $result[$currentIndex]['needs'][] = [
                             'name' => $otherNeed,
-                            'quanitity' => 1,
+                            'amount' => 1,
                             'standard' => false
                         ];
                     }
                 }
 
             }
-
+            
             if($an->need_type_id) {
                 $result[$currentIndex]['needs'][] = [
-                    'name' => $needTypes[$an->need_type_id]['label'],
+                    'name' => Metadata::getNeedTypeById($an->need_type_id)->label,
                     'amount' => $an->quantity,
                     'standard' => true
                 ];

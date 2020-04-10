@@ -3,7 +3,7 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Http\Resources\HelpRequestChange as HelpRequestChangeResource;
+use App\Http\Resources\PostingChange as PostingChangeResource;
 use App\Http\Resources\User as UserResource;
 
 class HelpRequest extends JsonResource
@@ -28,7 +28,7 @@ class HelpRequest extends JsonResource
             'medical_unit_name' => $this -> medical_unit_name,
             'current_needs' => $this -> current_needs,
             'county_id' => $this -> county_id,
-            'changes' => HelpRequestChangeResource::collection($this -> whenLoaded('changes')),
+            'changes' => PostingChangeResource::collection($this -> whenLoaded('changes')),
             'extra_info' => $this -> extra_info,
             'needs_text' => $this -> needs_text,
             'other_needs' => $this -> other_needs,

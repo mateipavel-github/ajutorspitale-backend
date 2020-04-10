@@ -5,7 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Log;
 
-class HelpRequestChangeNeed extends JsonResource
+class PostingChangeNeed extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -19,7 +19,7 @@ class HelpRequestChangeNeed extends JsonResource
             'id' => $this->id,
             'quantity' => $this->quantity,
             'need_type_id' => $this->need_type_id,
-            'help_request_change_id' => $this->help_request_change_id
+            'posting_change_id' => $this->posting_change_id
         ];
     }
 }

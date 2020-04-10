@@ -1,11 +1,10 @@
-<?php 
+<?php
 
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 
-class HelpRequestChange extends Model {
-
+class DeliveryHelpRequest extends Model
+{
+    //
 }
-
-?>

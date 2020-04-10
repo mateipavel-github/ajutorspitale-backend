@@ -37,23 +37,29 @@ Route::group(['prefix' => 'system'], function() {
 /* requests */
 Route::middleware("auth:api")->resource('requests', 'Api\v1\HelpRequestController', ['except' => ['store']]);
 Route::put('requests', 'Api\v1\HelpRequestController@store');
-
+Route::middleware("auth:api")->put('requests/{id}/add-note', 'Api\v1\HelpRequestController@addNote');
 Route::middleware("auth:api")->post('requests/mass-assign-to-user', 'Api\v1\HelpRequestController@massAssignToCurrentUser');
 
-Route::middleware("auth:api")->resource('changeRequests', 'Api\v1\HelpRequestChangeController', ['except' => ['store']]);
-Route::put('changeRequests', 'Api\v1\HelpRequestChangeController@store');
+/* offers */
+Route::middleware("auth:api")->resource('offers', 'Api\v1\HelpOfferController', ['except' => ['store']]);
+Route::put('offers', 'Api\v1\HelpOfferController@store');
+Route::middleware("auth:api")->put('offers/{id}/add-note', 'Api\v1\HelpRequestController@addNote');
 
+/* deliveries */
+Route::middleware("auth:api")->resource('deliveries', 'Api\v1\DeliveryController');
+Route::middleware("auth:api")->put('deliveries/{id}/add-note', 'Api\v1\DeliveryController@addNote');
+
+/* metadata */
 Route::get('metadata', 'Api\v1\MetadataController@index');
 Route::middleware("auth:api")->put('metadata', 'Api\v1\MetadataController@store');
 Route::middleware("auth:api")->delete('metadata', 'Api\v1\MetadataController@softDelete');
+Route::get('metadata/medical-units', 'Api\v1\MetadataController@medicalUnits');
 
+/* users */
 Route::middleware("auth:api")->resource('users', 'Api\v1\UserController', ['except' => ['delete']]);
 Route::middleware("auth:api")->delete('users/{user}', 'Api\v1\UserController@softDelete');
 
-Route::middleware("auth:api")->resource('request-notes', 'Api\v1\HelpRequestNoteController');
-
-Route::get('metadata/medical-units', 'Api\v1\MetadataController@medicalUnits');
-
+/* stats */
 Route::middleware("auth:api")->get('stats/by-county', 'Api\v1\StatsController@byCounty');
 Route::middleware("auth:api")->get('stats/all', 'Api\v1\StatsController@all');
 

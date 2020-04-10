@@ -6,19 +6,19 @@ use Illuminate\Database\Eloquent\Model;
 use App\HelpRequest;
 use App\User;
 
-class HelpRequestNote extends Model
+class Note extends Model
 {
 
-    protected $table = "help_request_notes";
+    protected $table = "notes";
     protected $with = ['user'];
+    protected $fillable = ['content','user_id'];
 
+    public function item() {
+        return $this->morphTo();
+    }
 
     public function user() {
         return $this -> belongsTo('App\User', 'user_id', 'id');
-    }
-
-    public function request() {
-        return $this -> belongsTo('App\HelpRequest', 'help_request_id', 'id');
     }
     
 }

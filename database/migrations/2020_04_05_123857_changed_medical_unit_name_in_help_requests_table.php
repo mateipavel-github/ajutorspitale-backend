@@ -27,7 +27,8 @@ class ChangedMedicalUnitNameInHelpRequestsTable extends Migration
     public function down()
     {
         Schema::table('help_requests', function (Blueprint $table) {
-            //
+            $table->string('medical_unit_name', 512)->nullable(false)->change();
+            $table->string('job_title', 512)->nullable(false)->change();
         });
     }
 }

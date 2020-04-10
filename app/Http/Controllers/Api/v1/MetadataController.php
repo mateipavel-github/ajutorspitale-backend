@@ -5,7 +5,7 @@ use App\Http\Controllers\Controller;
 
 use App\MetadataUserRoleType;
 use Illuminate\Http\Request;
-use App\Http\Resources\Metadata;
+use App\Http\Resources\Metadata as MetadataResource;
 
 use App\MetadataNeedType;
 use App\MetadataCounty;
@@ -13,6 +13,8 @@ use App\MetadataMedicalUnitType;
 use App\MetadataChangeType;
 use App\MetadataRequestStatusType;
 use App\MedicalUnit;
+
+use Metadata;
 
 class MetadataController extends Controller
 {
@@ -42,22 +44,13 @@ class MetadataController extends Controller
     public function index(Request $request)
     {
 
-        $needTypes = MetadataNeedType::orderBy('label')->get();
-        $counties = MetadataCounty::orderBy('label')->get();
-        $medicalUnitTypes = MetadataMedicalUnitType::orderBy('label')->get();
-        $changeTypes = MetadataChangeType::orderBy('label')->get();
-        $userRoleTypes = MetadataUserRoleType::orderBy('label')->get();
-        $requestStatusTypes = MetadataRequestStatusType::orderBy('label')->get();
+        $return = [];
+        $list = ['need_types', 'counties','medical_unit_types','change_types','user_role_types','request_status_types'];
+        foreach($list as $metadataType) {
+            $return[$metadataType] = Metadata::getSorted($metadataType, 'label')->all();
+        }
 
-        return [
-            'need_types' => Metadata::collection($needTypes),
-            'counties' => Metadata::collection($counties),
-            'medical_unit_types' => Metadata::collection($medicalUnitTypes),
-            'change_types' => Metadata::collection($changeTypes),
-            'user_role_types' => Metadata::collection($userRoleTypes),
-            'request_status_types' => Metadata::collection($requestStatusTypes)
-        ];
-
+        return $return;
     }
 
     public function store(Request $request) {
