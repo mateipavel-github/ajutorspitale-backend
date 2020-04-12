@@ -66,6 +66,7 @@ class DeliveryController extends Controller
                     $q->where('id','=',$keyword);
                 } else {
                     $q->where('contact_name', 'like', "%" . $keyword . "%");
+                    $q->orWhere('description', 'like', "%" . $keyword . "%");
                     $q->orWhere('contact_phone_number', 'like', "%" . $keyword . "%");
                     $q->orWhere('destination_address', 'like', "%" . $keyword . "%");
                 }
@@ -76,7 +77,7 @@ class DeliveryController extends Controller
             $list->where(['contact_phone_number' => $request->get("phone_number")]);
         }
 
-        $list = $list->with(['owner', 'medical_unit'])->paginate($this->per_page);
+        $list = $list->with(['owner', 'medical_unit', 'main_sponsor','delivery_sponsor'])->paginate($this->per_page);
         return response()->json([
             "data" => [
                 'items' => $list->items(),
@@ -113,6 +114,7 @@ class DeliveryController extends Controller
         $d = new Delivery;
         $mappings = [
             'name' => 'contact_name',
+            'description' => 'description',
             'phone_number' => 'contact_phone_number',
             'address' => 'destination_address',
             'county_id' => 'county_id',
@@ -190,6 +192,7 @@ class DeliveryController extends Controller
         $mappings = [
             'name' => 'contact_name',
             'phone_number' => 'contact_phone_number',
+            'description' => 'description',
             'address' => 'destination_address',
             'county_id' => 'county_id',
             'medical_unit_id' => 'destination_medical_unit_id',
@@ -212,7 +215,7 @@ class DeliveryController extends Controller
         $d->save();
 
         if($request->post('requests')) {
-            $requests = array_unique(collect($request->post('requests'))->pluck('id'));
+            $requests = array_unique(collect($request->post('requests'))->pluck('id')->toArray());
             $d->requests()->sync($requests);
         }
 
