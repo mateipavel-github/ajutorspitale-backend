@@ -42,6 +42,11 @@ class Posting extends Model
         return $this -> belongsTo('App\User', 'assigned_user_id', 'id');
     }
 
+    public function deliveries()
+    {
+        return $this->belongsToMany('App\Delivery')->withTimestamps();;
+    }
+
     /* aggregate needs */
 
     public function _getCurrentNeedsAttribute() {

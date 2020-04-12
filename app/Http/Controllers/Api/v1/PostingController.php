@@ -72,6 +72,95 @@ class PostingController extends Controller
         return ['success' => true];
     }
 
+
+    public function filterByNeeds(Request $request) {
+
+        $list = $this->model::select("*")->with('changes.needs');
+
+        if ($request->get("per_page")) {
+            $this->per_page = $request->get('per_page');
+        }
+
+        if($needs = $request->get('needs')) {
+            $needs = explode(',', $needs);
+            $changeItemType = $this->model;
+            $list->whereIn('id', function($query) use($changeItemType, $needs) {
+
+                $needTypes = [];
+                foreach($needs as $need) {
+                    list($need_type,$quantity) = explode(':', $need);
+                    $needTypes[]=$need_type;
+                }
+
+                $pcTbl = (new \App\PostingChange)->getTable();
+                $pcnTbl = (new \App\PostingChangeNeed)->getTable();
+
+                $query->select('item_id')
+                    ->from($pcTbl)
+                    ->join($pcnTbl, $pcTbl.'.id', '=', $pcnTbl.'.posting_change_id')
+                    ->where($pcTbl.'.item_type', $changeItemType)
+                    ->whereIn($pcnTbl.'.need_type_id', $needTypes)
+                    ->groupBy($pcTbl.'.item_id', $pcnTbl.'.need_type_id')
+                    ->havingRaw('SUM(quantity) > ?', [0]);
+            
+            });
+        }
+
+        if ($request->get("medical_unit_id")) {
+            $list->where(['medical_unit_id' => $request->get("medical_unit_id")]);
+        }
+
+        if ($statusSelection = $request->get("status")) {
+            $list->whereIn('status', $this->_getStatusSelectionIds($statusSelection));
+        }
+
+        if ($keyword = $request->get("keyword")) {
+            $list->where(function($q) use ($keyword) {
+                if(is_numeric($keyword) && strlen($keyword)<7) {
+                    $q->where('id','=',$keyword);
+                } else {
+                    $q->where('name', 'like', "%" . $keyword . "%");
+                    $q->orWhere('phone_number', 'like', "%" . $keyword . "%");
+                    $q->orWhere('medical_unit_name', 'like', "%" . $keyword . "%");
+                }
+            });
+        }
+
+        if ($request->get("phone_number")) {
+            $list->where(['phone_number' => $request->get("phone_number")]);
+        }
+        if ($counties = $request->get("county")) {
+            if(!is_array($counties)) { 
+                $counties = explode(',', $counties);
+            }
+            switch($this->postingType) {
+                case 'request':
+                    $list->whereIn('county_id', $counties);
+                    break;
+                case 'offer':
+                    $list->whereIn('id', function($query) use($counties) {
+                        $query->select('help_offer_id')
+                            ->from(with(new \App\HelpOfferCounty)->getTable())
+                            ->whereIn('county_id', $counties);
+                    });
+                    break;
+            }
+        }
+
+        $list = $list->with('assigned_user')->paginate($this->per_page);
+        return response()->json([
+            "data" => [
+                'items' => new $this->resourceCollection($list->items()),
+                'current_page' => $list->currentPage(),
+                'last_page' => $list->lastPage(),
+                'per_page' => $list->perPage(),
+                'total' => $list->total()
+            ],
+            "message" => __("Got collection"),
+            "success" => true
+        ]);
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -80,6 +169,10 @@ class PostingController extends Controller
      */
     public function index(Request $request)
     {
+
+        if($request->get('needs')) {
+            return $this->filterByNeeds($request);
+        }
 
         $list = $this->model::select("*");
 

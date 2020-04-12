@@ -103,4 +103,11 @@ class MetadataController extends Controller
 
     }
 
+    public function delete(Request $request, $type, $id) {
+
+        echo $id;
+        echo json_encode($request->post());
+
+    }
+
 }

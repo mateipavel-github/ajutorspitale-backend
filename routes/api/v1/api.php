@@ -45,14 +45,19 @@ Route::middleware("auth:api")->resource('offers', 'Api\v1\HelpOfferController', 
 Route::put('offers', 'Api\v1\HelpOfferController@store');
 Route::middleware("auth:api")->put('offers/{id}/add-note', 'Api\v1\HelpOfferController@addNote');
 
+/* sponsors */
+Route::middleware("auth:api")->resource('sponsors', 'Api\v1\SponsorController');
+Route::middleware("auth:api")->put('sponsors', 'Api\v1\SponsorController@store');
+
 /* deliveries */
 Route::middleware("auth:api")->resource('deliveries', 'Api\v1\DeliveryController');
+Route::middleware("auth:api")->put('deliveries', 'Api\v1\DeliveryController@store');
 Route::middleware("auth:api")->put('deliveries/{id}/add-note', 'Api\v1\DeliveryController@addNote');
 
 /* metadata */
 Route::get('metadata', 'Api\v1\MetadataController@index');
 Route::middleware("auth:api")->put('metadata', 'Api\v1\MetadataController@store');
-Route::middleware("auth:api")->delete('metadata', 'Api\v1\MetadataController@softDelete');
+Route::middleware("auth:api")->delete('metadata/{type}/{id}', 'Api\v1\MetadataController@delete');
 Route::get('metadata/medical-units', 'Api\v1\MetadataController@medicalUnits');
 
 /* users */
