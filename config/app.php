@@ -227,7 +227,8 @@ return [
         'Validator' => Illuminate\Support\Facades\Validator::class,
         'View' => Illuminate\Support\Facades\View::class,
 
-        'Metadata' => App\Helpers\MetadataFacade::class
+        'Metadata' => App\Helpers\MetadataFacade::class,
+        'TextHelper' => App\Helpers\TextHelperFacade::class
 
     ],
 

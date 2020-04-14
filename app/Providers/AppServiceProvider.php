@@ -21,6 +21,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton('metadata', function ($app) {
             return new \App\Helpers\MetadataHelper;
         });
+        
+        $this->app->singleton('texthelper', function ($app) {
+            return new \App\Helpers\TextHelper;
+        });
     }
 
     /**

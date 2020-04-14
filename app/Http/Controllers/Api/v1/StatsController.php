@@ -44,23 +44,24 @@ class StatsController extends Controller
             ->whereIn("help_requests.status", Metadata::getRequestStatusIdsFromSlugs(['approved','processed']))
             ->groupBy("posting_change_needs.need_type_id", "posting_changes.item_id")
             ->select(
-                DB::raw('SUM(quantity) as quantity'),
-                "metadata_need_types.label as a",
-                "help_requests.medical_unit_name as b",
-                "metadata_medical_unit_types.label as c",
-                "medical_units.name as d",
-                "help_requests.name as e",
-                "help_requests.job_title as f",
-                "help_requests.phone_number as g",
-                "help_requests.created_at as h",
-                "help_requests.updated_at as i",
-                "medical_units.address as j",
-                "medical_units.website as k",
-                "medical_units.facebook_page as l",
-                "metadata_counties.label as m",
-                DB::raw("CONCAT('https://cereri.ajutorspitale.ro/admin/request/', help_requests.id) as n")
+                DB::raw('SUM(quantity) as a'),
+                "metadata_need_types.label as b",
+                "help_requests.medical_unit_name as c",
+                "metadata_medical_unit_types.label as d",
+                "medical_units.name as e",
+                "help_requests.name as f",
+                "help_requests.job_title as g",
+                "help_requests.phone_number as h",
+                "help_requests.created_at as i",
+                "help_requests.updated_at as j",
+                "medical_units.address as k",
+                "medical_units.website as l",
+                "medical_units.facebook_page as m",
+                "metadata_counties.label as n",
+                DB::raw("CONCAT('https://cereri.ajutorspitale.ro/admin/request/', help_requests.id) as o")
             )
             ->orderBy("metadata_need_types.label", "asc");
+        
         
         //return response()->json($query->get());
 
@@ -128,14 +129,16 @@ class StatsController extends Controller
                     'needs' => []
                 ];
 
-                $otherNeeds = explode("\n", $an->other_needs);
-                foreach($otherNeeds as $otherNeed) {
-                    if(!empty($otherNeed)) {
-                        $result[$currentIndex]['needs'][] = [
-                            'name' => $otherNeed,
-                            'amount' => 1,
-                            'standard' => false
-                        ];
+                if(Metadata::getRequestStatusById($an->status)->slug !== 'processed') {
+                    $otherNeeds = explode("\n", $an->other_needs);
+                    foreach($otherNeeds as $otherNeed) {
+                        if(!empty($otherNeed)) {
+                            $result[$currentIndex]['needs'][] = [
+                                'name' => $otherNeed,
+                                'amount' => 1,
+                                'standard' => false
+                            ];
+                        }
                     }
                 }
 
