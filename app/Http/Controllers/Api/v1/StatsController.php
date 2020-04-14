@@ -10,6 +10,7 @@ use App\PostingChange;
 use App\PostingChangeNeed;
 use App\MedicalUnit;
 use Metadata;
+use App\Exports\HelpRequestExport;
 
 class StatsController extends Controller
 {
@@ -23,6 +24,48 @@ class StatsController extends Controller
         ];
 
         $this->approvedStatusId = Metadata::getRequestStatusIdFromSlug('approved');
+    }
+
+    public function requestsToCsv() {
+
+        $this->init();
+
+        $query = DB::table("posting_change_needs")
+            ->join("posting_changes", 
+                    "posting_change_needs.posting_change_id", "=", "posting_changes.id")
+            ->join("help_requests", function($join) {
+                $join->on("help_requests.id", "=", "posting_changes.item_id");
+                $join->on("posting_changes.item_type", "=", DB::raw("'" . (new HelpRequest)->getPostingType('sql') . "'"));
+            })
+            ->join("metadata_counties", "help_requests.county_id", "=", "metadata_counties.id")
+            ->join("metadata_medical_unit_types", "help_requests.medical_unit_type_id", "=", "metadata_medical_unit_types.id")
+            ->join("metadata_need_types", "posting_change_needs.need_type_id", "=", "metadata_need_types.id")
+            ->leftJoin("medical_units", "help_requests.medical_unit_id", "=", "medical_units.id")
+            ->whereIn("help_requests.status", Metadata::getRequestStatusIdsFromSlugs(['approved','processed']))
+            ->groupBy("posting_change_needs.need_type_id", "posting_changes.item_id")
+            ->select(
+                DB::raw('SUM(quantity) as quantity'),
+                "metadata_need_types.label as a",
+                "help_requests.medical_unit_name as b",
+                "metadata_medical_unit_types.label as c",
+                "medical_units.name as d",
+                "help_requests.name as e",
+                "help_requests.job_title as f",
+                "help_requests.phone_number as g",
+                "help_requests.created_at as h",
+                "help_requests.updated_at as i",
+                "medical_units.address as j",
+                "medical_units.website as k",
+                "medical_units.facebook_page as l",
+                "metadata_counties.label as m",
+                DB::raw("CONCAT('https://cereri.ajutorspitale.ro/admin/request/', help_requests.id) as n")
+            )
+            ->orderBy("metadata_need_types.label", "asc");
+        
+        //return response()->json($query->get());
+
+        return (new HelpRequestExport($query))->download('requests.csv');
+
     }
 
     public function all() {

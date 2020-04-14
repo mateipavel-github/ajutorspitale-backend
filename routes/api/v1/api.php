@@ -67,6 +67,7 @@ Route::middleware("auth:api")->delete('users/{user}', 'Api\v1\UserController@sof
 /* stats */
 Route::middleware("auth:api")->get('stats/by-county', 'Api\v1\StatsController@byCounty');
 Route::middleware("auth:api")->get('stats/all', 'Api\v1\StatsController@all');
+Route::get('stats/requests-to-csv', 'Api\v1\StatsController@requestsToCsv');
 
 // // these routes should be removed after import
 // // if(env('APP_ENV')==='local') {
