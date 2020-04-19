@@ -50,7 +50,7 @@ class HelpRequestExport implements FromQuery, WithHeadings, WithMapping
             TextHelper::englishCharactersOnly($item->e),
             TextHelper::englishCharactersOnly($item->f),
             TextHelper::englishCharactersOnly($item->g),
-            "'".$item->h,
+            $item->h,
             $item->i,
             $item->j,
             TextHelper::englishCharactersOnly($item->k),

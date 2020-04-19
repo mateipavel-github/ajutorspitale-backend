@@ -54,6 +54,10 @@ Route::middleware("auth:api")->resource('deliveries', 'Api\v1\DeliveryController
 Route::middleware("auth:api")->put('deliveries', 'Api\v1\DeliveryController@store');
 Route::middleware("auth:api")->put('deliveries/{id}/add-note', 'Api\v1\DeliveryController@addNote');
 
+/* delivery planning */
+Route::middleware("auth:api")->resource('delivery-plans', 'Api\v1\DeliveryPlanController');
+Route::middleware("auth:api")->put('delivery-plans', 'Api\v1\DeliveryPlanController@store');
+
 /* metadata */
 Route::get('metadata', 'Api\v1\MetadataController@index');
 Route::middleware("auth:api")->put('metadata', 'Api\v1\MetadataController@store');

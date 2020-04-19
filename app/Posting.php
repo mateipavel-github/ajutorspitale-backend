@@ -12,7 +12,7 @@ class Posting extends Model
     //
     protected $with = ['notes','notes.user','changes.user'];
     protected $fillable = ['assigned_user_id'];
-    protected $cast = ['current_needs'=>'array'];
+    protected $casts = ['current_needs'=>'array'];
 
     protected $_editableFields = [
         'status', 'medical_unit_id',
@@ -42,9 +42,12 @@ class Posting extends Model
         return $this -> belongsTo('App\User', 'assigned_user_id', 'id');
     }
 
-    public function deliveries()
+    public function delivery_plans()
     {
-        return $this->belongsToMany('App\Delivery')->withTimestamps();;
+        return $this->morphToMany('App\DeliveryPlan', 'item', 'delivery_plan_posting')
+                        ->using(str_replace('App\\', 'App\\DeliveryPlan', get_class($this)))
+                        ->withTimestamps()
+                        ->withPivot('details','delivery_id');
     }
 
     /* aggregate needs */

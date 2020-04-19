@@ -18,6 +18,11 @@ class Delivery extends Model
         return $this->hasMany('App\DeliveryNeed');
     }
 
+    public function delivery_requests()
+    {
+        return $this->hasMany('App\DeliveryPlanHelpRequest');
+    }
+
     public function medical_unit() {
         return $this->belongsTo('App\MedicalUnit', 'destination_medical_unit_id', 'id');
     }
@@ -34,13 +39,4 @@ class Delivery extends Model
         return $this -> hasOne('App\Sponsor', 'id', 'delivery_sponsor_id');
     }
 
-    public function requests()
-    {
-        return $this->belongsToMany('App\HelpRequest')->withTimestamps();
-    }
-
-    public function offers()
-    {
-        return $this->belongsToMany('App\HelpOffer')->withTimestamps();
-    }
 }
