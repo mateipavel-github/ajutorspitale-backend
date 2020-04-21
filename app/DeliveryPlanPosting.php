@@ -10,6 +10,7 @@ class DeliveryPlanPosting extends MorphPivot
     //
     protected $table = 'delivery_plan_posting';
     protected $casts = ['details'=>'array'];
+    public $incrementing = true;
 
     public function delivery() {
         return $this->belongsTo('App\Delivery');

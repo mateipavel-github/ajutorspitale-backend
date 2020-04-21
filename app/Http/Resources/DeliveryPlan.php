@@ -26,6 +26,8 @@ class DeliveryPlan extends JsonResource
             'offers' => $this -> offers,
             'assigned_user' => new UserResource($this -> whenLoaded('assigned_user')),
             'owner' => new UserResource($this -> whenLoaded('owner')),
+            'main_sponsor' => $this -> whenLoaded('main_sponsor'),
+            'delivery_sponsor' => $this -> whenLoaded('delivery_sponsor'),
             'status' => $this -> status
         ];
 

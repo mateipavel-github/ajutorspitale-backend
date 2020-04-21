@@ -38,4 +38,12 @@ class DeliveryPlan extends Model
         return $this -> belongsTo('App\User', 'assigned_user_id', 'id');
     }
 
+    public function main_sponsor() {
+        return $this -> hasOne('App\Sponsor', 'id', 'main_sponsor_id');
+    }
+
+    public function delivery_sponsor() {
+        return $this -> hasOne('App\Sponsor', 'id', 'delivery_sponsor_id');
+    }
+
 }
