@@ -4,6 +4,7 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use AjCastro\EagerLoadPivotRelations\EagerLoadPivotTrait;
 
 class DeliveryPlan extends Model
 {
@@ -26,7 +27,7 @@ class DeliveryPlan extends Model
         return $this->morphedByMany('App\HelpRequest', 'item', 'delivery_plan_posting')
                         ->using('App\DeliveryPlanHelpRequest')
                         ->withTimestamps()
-                        ->withPivot('details','delivery_id','position','priority_group');
+                        ->withPivot('delivery_id','details','position','priority_group');
     }
 
     public function owner() {

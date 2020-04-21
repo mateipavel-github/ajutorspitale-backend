@@ -4,11 +4,14 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use AjCastro\EagerLoadPivotRelations\EagerLoadPivotTrait;
 use DB;
 
 class Posting extends Model
 {
     use SoftDeletes;
+    use EagerLoadPivotTrait;
+
     //
     protected $with = ['notes','notes.user','changes.user'];
     protected $fillable = ['assigned_user_id'];
@@ -47,7 +50,7 @@ class Posting extends Model
         return $this->morphToMany('App\DeliveryPlan', 'item', 'delivery_plan_posting')
                         ->using(str_replace('App\\', 'App\\DeliveryPlan', get_class($this)))
                         ->withTimestamps()
-                        ->withPivot('details','delivery_id');
+                        ->withPivot('delivery_id', 'details');
     }
 
     /* aggregate needs */

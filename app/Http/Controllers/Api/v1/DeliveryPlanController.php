@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\v1;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\DeliveryPlan;
+use App\HelpOffer;
 use App\Http\Resources\DeliveryPlan as DeliveryPlanResource;
 use DB;
 
@@ -43,6 +44,16 @@ class DeliveryPlanController extends Controller
         $p -> user_id = $request->user('api')->id;
         $p -> save();
 
+        // if the new delivery plan is connected to an offer, let's grab the offer's delivery items and update the plan accordingly
+        if($offerId = $request->post('fromOffer')) {
+            $offer = HelpOffer::find($offerId);
+            if($offer) {
+                $p -> details = ['needs'=>$offer->current_needs];
+                $p -> offers() -> attach($offerId);
+                $p -> save();
+            }
+        }
+
         return response()->json([
             'success'=>true,
             'data' => [
@@ -60,7 +71,8 @@ class DeliveryPlanController extends Controller
     public function show($id)
     {
         //
-        return new DeliveryPlanResource(DeliveryPlan::with('requests','offers')->find($id));
+        $plan = DeliveryPlan::with('requests.medical_unit','requests.pivot.delivery','offers')->find($id);
+        return new DeliveryPlanResource($plan);
 
     }
 
@@ -91,13 +103,17 @@ class DeliveryPlanController extends Controller
         $details = $request->post('details');
         if(isset($details['needs'])) {
             $details['needs'] = array_map( function($need) {
-                return ['need_type_id' => $need['need_type']['id'], 'quantity' => $need['quantity']];
+                if(!isset($need['need_type_id']) && isset($need['need_type'])) {
+                    $need['need_type_id'] = $need['need_type']['id'];
+                }
+                return ['need_type_id' => $need['need_type_id'], 'quantity' => $need['quantity']];
             }, $details['needs']);
         }
 
         $p->details = $details;
 
-        if($requests = $request->post('requests')) {
+        $requests = $request->post('requests');
+        if(!is_null($requests)) {
             $modelsToSync = [];
             foreach($requests as $request) {
                 $modelsToSync[$request['id']] = [

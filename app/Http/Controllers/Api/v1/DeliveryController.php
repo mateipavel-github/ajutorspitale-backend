@@ -138,7 +138,7 @@ class DeliveryController extends Controller
 
         if($request->post('requests')) {
             $requests = collect($request->post('requests'))->pluck('id');
-            $d->requests()->attach($requests);
+            $d->delivery_requests()->attach($requests);
         }
 
         if($request->post('needs')) {
@@ -150,7 +150,7 @@ class DeliveryController extends Controller
         return response()->json([
             'success'=>true,
             'data' => [
-                'item' => Delivery::with(['requests', 'notes', 'needs', 'owner', 'main_sponsor','delivery_sponsor','medical_unit'])->find($d->id)
+                'item' => Delivery::with(['delivery_requests', 'notes', 'needs', 'owner', 'main_sponsor','delivery_sponsor','medical_unit'])->find($d->id)
             ]
         ]);
     }
@@ -163,7 +163,7 @@ class DeliveryController extends Controller
      */
     public function show($id)
     {
-        return Delivery::with(['requests', 'notes', 'needs', 'owner', 'main_sponsor','delivery_sponsor','medical_unit'])->find($id);
+        return Delivery::with(['delivery_requests', 'notes', 'needs', 'owner', 'main_sponsor','delivery_sponsor','medical_unit'])->find($id);
     }
 
     /**

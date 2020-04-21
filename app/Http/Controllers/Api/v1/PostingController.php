@@ -106,8 +106,11 @@ class PostingController extends Controller
             });
         }
 
-        if ($request->get("medical_unit_id")) {
-            $list->where(['medical_unit_id' => $request->get("medical_unit_id")]);
+        if ($mut = $request->get("medical_unit_type_id")) {
+            if(!is_array($mut)) { 
+                $mut = explode(',', $mut);
+            }
+            $list->whereIn('medical_unit_type_id', $mut);
         }
 
         if ($statusSelection = $request->get("status")) {
@@ -200,8 +203,23 @@ class PostingController extends Controller
             $list->where(['medical_unit_id' => $request->get("medical_unit_id")]);
         }
 
-        if ($request->get("medical_unit_type_id")) {
-            $list->where(['medical_unit_type_id' => $request->get("medical_unit_type_id")]);
+        if ($mut = $request->get("medical_unit_type_id")) {
+            if(!is_array($mut)) { 
+                $mut = explode(',', $mut);
+            }
+            $list->whereIn('medical_unit_type_id', $mut);
+        }
+
+        if ($keyword = $request->get("keyword")) {
+            $list->where(function($q) use ($keyword) {
+                if(is_numeric($keyword) && strlen($keyword)<7) {
+                    $q->where('id','=',$keyword);
+                } else {
+                    $q->where('name', 'like', "%" . $keyword . "%");
+                    $q->orWhere('phone_number', 'like', "%" . $keyword . "%");
+                    $q->orWhere('medical_unit_name', 'like', "%" . $keyword . "%");
+                }
+            });
         }
 
         if ($counties = $request->get("county")) {

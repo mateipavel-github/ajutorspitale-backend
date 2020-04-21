@@ -12,7 +12,7 @@ class DeliveryPlanPosting extends MorphPivot
     protected $casts = ['details'=>'array'];
 
     public function delivery() {
-        return $this->hasOne('App\Delivery');
+        return $this->belongsTo('App\Delivery');
     }
 
     public function setDetailsAttribute($value) {
