@@ -34,8 +34,8 @@ class LoginController extends Controller
             ]);
         }
         $current_user = Auth::user();
-
-        $token = $current_user->createToken('authToken', [$current_user->role->slug])->accessToken;
+        $scopes = !empty($current_user->role->scopes) ? explode(',', $current_user->role->scopes) : [];
+        $token = $current_user->createToken('authToken', $scopes)->accessToken;
         return response()->json([
             "message" => __("Login with success"),
             "data" => [

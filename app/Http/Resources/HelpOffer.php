@@ -34,7 +34,8 @@ class HelpOffer extends JsonResource
             'other_needs' => $this -> other_needs,
             'assigned_user' => new UserResource($this -> whenLoaded('assigned_user')),
             'notes' => $this->whenLoaded('notes'),
-            'status' => $this -> status
+            'status' => $this -> status,
+            'delivery_plans' => $this->whenLoaded('delivery_plans')
         ];
 
     }

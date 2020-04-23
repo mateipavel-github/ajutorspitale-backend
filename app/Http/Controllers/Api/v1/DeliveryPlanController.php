@@ -5,10 +5,15 @@ namespace App\Http\Controllers\Api\v1;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\DeliveryPlan;
+use App\DeliveryPlanPosting;
 use App\HelpOffer;
+use App\HelpRequest;
 use App\Delivery;
+use App\DeliveryNeed;
 use App\Http\Resources\DeliveryPlan as DeliveryPlanResource;
 use DB;
+use App\Exports\DeliveryExport;
+use Illuminate\Support\Collection;
 
 class DeliveryPlanController extends Controller
 {
@@ -76,6 +81,20 @@ class DeliveryPlanController extends Controller
         return new DeliveryPlanResource($plan);
 
     }
+    
+    
+    public function download($id) {
+
+        $delivery_ids = [];
+        $plan = DeliveryPlan::with('requests.pivot.delivery')->find($id);
+        foreach($plan->requests as $r) {
+            if($r->pivot->delivery !== null) {
+                array_push($delivery_ids, $r->pivot->delivery->id);
+            }
+        }
+        return (new DeliveryExport($delivery_ids))->download('deliveries.xlsx');
+
+    }
 
     /**
      * Show the form for editing the specified resource.
@@ -97,7 +116,9 @@ class DeliveryPlanController extends Controller
      */
     public function update(Request $request, $id)
     {
+
         $p = DeliveryPlan::with('requests.pivot.delivery')->find($id);
+        \Log::info('Plan loaded', ['Plan id' => $id]);
 
         $p->title = $request->post('title');
 
@@ -115,6 +136,8 @@ class DeliveryPlanController extends Controller
             $p->delivery_sponsor_id = $plan_delivery_sponsor['id'];
         }
 
+        \Log::info('Set plan delivery items', ['Plan id' => $id]);
+
         $details = $request->post('details');
         if(isset($details['needs'])) {
             $details['needs'] = array_map( function($need) {
@@ -127,102 +150,163 @@ class DeliveryPlanController extends Controller
 
         $p->details = $details;
 
-        $requests = $request->post('requests');
-        if(!is_null($requests)) {
+        \Log::info('DONE Set plan delivery items', ['Plan id' => $id]);
 
-            $postedRequestsIds = [];
-            foreach($requests as $r) {
-                array_push($postedRequestsIds, $r['id']);
+        $_SESSION['log_sql'] = [
+            'queries' => [],
+            'time' => 0
+        ];
+
+        if(!is_null($request->post('requests'))) {
+            
+            $existingRequests = $p->requests->keyBy('id');
+            \Log::info('Existing requests', $existingRequests->keys()->all());    
+            \Log::info('Existing requests: '.json_encode($p->requests));   
+
+            $postedRequests = collect($request->post('requests'))->keyBy('id');
+            \Log::info('Posted requests', $postedRequests->keys()->all());
+
+            $requestsToDetach = $existingRequests->diffKeys($postedRequests);
+            $deliveriesToDelete = $requestsToDetach->pluck('pivot.delivery_id');
+
+            $requestsToAttach = $postedRequests->diffKeys($existingRequests);
+
+            $requestsToUpdate = $existingRequests->diffKeys($requestsToDetach);
+            
+            \Log::info('Requests to detach', $requestsToDetach->pluck('id')->all());
+            \Log::info('Deliveries to delete', $deliveriesToDelete->all());
+
+            // delete deliveries
+            Delivery::whereIn('id', $deliveriesToDelete->all())->delete();
+
+            // detach requests
+            $helpRequestItemType = get_class(new HelpRequest);
+            DeliveryPlanPosting::where('item_type', $helpRequestItemType)
+                                ->where('delivery_plan_id', $p->id)
+                                ->whereIn('item_id', $requestsToDetach->pluck('id')->all())
+                                ->delete();
+
+
+            // sync new and existing requests
+            $pdoBindings = [];
+            $pdoString = '';
+            $postedRequests->each( function($r, $rId) use (&$pdoBindings, &$pdoString, $p, $helpRequestItemType) {
+                $pdoString .= '(?,?,?,?,?,?,NOW(),NOW()),';
+                array_push($pdoBindings, 
+                    $p->id, $helpRequestItemType, $rId, 
+                    isset($r['delivery']['id']) ? $r['delivery']['id'] : null,
+                    $r['position'], 
+                    $r['priority_group']);
+            });
+            $pivotTable = (new DeliveryPlanPosting())->getTable();
+            if(count($pdoBindings)) {
+                DB::statement('INSERT INTO '.$pivotTable.' 
+                    (delivery_plan_id, item_type, item_id, delivery_id, position, priority_group, created_at, updated_at)
+                    VALUES '.trim($pdoString, ',').' 
+                    ON DUPLICATE KEY UPDATE 
+                        delivery_id=VALUES(delivery_id),
+                        position=VALUES(position),
+                        updated_at=VALUES(updated_at),
+                        priority_group=VALUES(priority_group) ', $pdoBindings);
             }
             
-            // loop through existing plan requests (before sync-ing the new requests) and see which 
-            foreach($p->requests as $r) {
-                $postedRequestIndex = array_search($r->id, $postedRequestsIds);
-                if($postedRequestIndex === false) {
-                    // if we need to delete a plan_request, delete deliveries:
-                    if($r->pivot->delivery) {
-                        $r->pivot->delivery->needs()->delete();
-                        $r->pivot->delivery->delete();
-                    }
-                } else {
-                    $postedRequestDelivery = $requests[$postedRequestIndex]['delivery'];
-                    $d = $r->pivot->delivery;
-                    if(!$d) {
-                        $d = new Delivery();
-                        $d -> save();
-                        $r->pivot->delivery()->associate($d);
-                    }
-                    
-                    // if we need to update a plan_request, update the delivery first
-                    $d->fill(array_merge($postedRequestDelivery, $request->post('sender')));
+            \Log::info('Requests synced. Moving on to updating delivery data');
 
-                    if(isset($postedRequestDelivery['main_sponsor'])) {
-                        $d->main_sponsor_id = $postedRequestDelivery['main_sponsor']['id'];
-                    } elseif ($plan_main_sponsor) {
-                        $d->main_sponsor_id = $plan_main_sponsor['id'];
-                    }
-                    
-                    if(isset($postedRequestDelivery['delivery_sponsor'])) {
-                        $d->delivery_sponsor_id = $postedRequestDelivery['delivery_sponsor']['id'];
-                    } elseif ($plan_delivery_sponsor) {
-                        $d->delivery_sponsor_id = $plan_delivery_sponsor;
-                    }
+            $p->load('requests.pivot.delivery');
+            
+            $deliveryNeedsSyncPlan = ['to_delete'=>[], 'to_create_or_update'=> []];
 
-                    $d->destination_medical_unit_id = isset($postedRequestDelivery['medical_unit']) ? $postedRequestDelivery['medical_unit']['id'] : null;
-                    $d->save();
-                    // sync delivery needs 
-                    $d->syncNeeds($postedRequestDelivery['needs']);
-                    $requests[$postedRequestIndex]['delivery_id'] = $d->id;
-                }
+            foreach($p->requests as $pr) {
+                
+                \Log::info('Processing request '. $pr->id);
 
-            }
-            $modelsToSync = [];
-            foreach($requests as $request) {
-                $modelsToSync[$request['id']] = [
-                    'delivery_id' => isset($request['delivery_id']) ? $request['delivery_id'] : 0,
-                    'position' => $request['position'],
-                    'priority_group' => $request['priority_group'],
-                    'details' => isset($request['details']) ? $request['details'] : []
-                ];
-            }
-            $syncResults = $p->requests()->sync($modelsToSync);
-
-            //create delivery and delivery_needs for newly attached requests
-            $requests_added = $p->requests()->whereIn('id', $syncResults['attached'])->get();
-
-            foreach($requests_added as $r) {
-                $postedRequestIndex = array_search($r->id, $postedRequestsIds);
-                $postedRequestDelivery = $requests[$postedRequestIndex]['delivery'];
-                $r->pivot->delivery;
+                $isNewDelivery = false;
+                $d = $pr->pivot->delivery;
                 if(!$d) {
+                    \Log::info('Request '.$pr->id.' does not have an associated delivery');
                     $d = new Delivery();
-                    $d -> save();
-                    $r->pivot->delivery()->associate($d);
+                    $d -> user_id = request()->user('api')->id;
+                    $isNewDelivery = true;
                 }
-                $d->fill(array_merge($postedRequestDelivery, $request->post('sender')));
+
+                $deliveryData = $postedRequests->get($pr->id)['delivery'];
+                $d->fill(array_merge($deliveryData, $request->post('sender')));
+
                 if(isset($postedRequestDelivery['main_sponsor'])) {
                     $d->main_sponsor_id = $postedRequestDelivery['main_sponsor']['id'];
                 } elseif ($plan_main_sponsor) {
                     $d->main_sponsor_id = $plan_main_sponsor['id'];
-                }   
+                }
+                
                 if(isset($postedRequestDelivery['delivery_sponsor'])) {
                     $d->delivery_sponsor_id = $postedRequestDelivery['delivery_sponsor']['id'];
                 } elseif ($plan_delivery_sponsor) {
-                    $d->delivery_sponsor_id = $plan_delivery_sponsor;
+                    $d->delivery_sponsor_id = $plan_delivery_sponsor['id'];
                 }
+
                 $d->save();
-                // sync delivery needs 
-                $d->syncNeeds($postedRequestDelivery['needs']);
+                \Log::info('Delivery '. $d->id.', corresponding to request '. $pr->id.' saved with extra data.');
+                if($isNewDelivery) {
+                    $pr -> pivot -> delivery() -> associate($d);
+                    $pr -> pivot -> save();
+                    \Log::info('Delivery '. $d->id.' created and associated to pivot');
+                }
+
+
+                // sync delivery needs. "false" flag prevents execution so we can perform it in an optimized manner
+                $aux = $d->syncNeeds($deliveryData['needs'], false);
+                foreach($aux['to_delete'] as $needTypeId=>$need) {
+                    array_push($deliveryNeedsSyncPlan['to_delete'], ['delivery_id'=>$d->id, 'need_type_id'=>$needTypeId]);
+                }
+                foreach($aux['to_create_or_update'] as $needTypeId=>$need) {
+                    array_push($deliveryNeedsSyncPlan['to_create_or_update'], ['delivery_id'=>$d->id, 'need_type_id'=>$needTypeId, 'quantity'=>$need['quantity']]);
+                }
+
+                \Log::info('Delivery '. $d->id.' needs syncronized');
             }
 
-        }
+            //delete delivery needs that are gone
+            if(count($deliveryNeedsSyncPlan['to_delete'])>0) {
+                $aux = DeliveryNeed::where(DB::raw('1'),'0');
+                foreach($deliveryNeedsSyncPlan['to_delete'] as $td) {
+                    $aux->orWhere(function ($query) use ($td) {
+                        $query->where('need_type_id', $td['need_type_id'])->where('delivery_id', $td['delivery_id']);
+                    });
+                }
+                $aux->delete();
+            }
 
+            //create or update needs
+            $pdoBindings = [];
+            $pdoString = '';
+            foreach($deliveryNeedsSyncPlan['to_create_or_update'] as $tcu) {
+                $pdoString .= '(?,?,?, NOW(), NOW()),';
+                array_push($pdoBindings, $tcu['delivery_id'], $tcu['need_type_id'], $tcu['quantity']);
+            }
+            $deliveryNeedsTable = (new DeliveryNeed())->getTable();
+            if(count($pdoBindings)) {
+                DB::statement('INSERT INTO '.$deliveryNeedsTable.' 
+                    (delivery_id, need_type_id, quantity, created_at, updated_at)
+                    VALUES '.trim($pdoString, ',').' 
+                    ON DUPLICATE KEY UPDATE 
+                        quantity=VALUES(quantity),
+                        updated_at=VALUES(updated_at)', $pdoBindings);
+            }
+            
+        }
+        
+        \Log::info('Saving plan');
         $p->save();
+        \Log::info('Plan saved');
+
+        $sql_log = $_SESSION['log_sql'];
+        unset($_SESSION['log_sql']);
 
         return response()->json([
             'success'=>true,
             'data' => [
-                'item' => $this->show($id)
+                'item' => $this->show($id),
+                'sql_log' => $sql_log
             ]
         ]);
     }

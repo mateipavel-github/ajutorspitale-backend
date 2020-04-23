@@ -1,0 +1,2 @@
+./node_modules/html-minifier/cli.js
+./node_modules/.bin/html-minifier

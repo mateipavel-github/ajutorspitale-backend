@@ -45,7 +45,7 @@ class MetadataController extends Controller
     {
 
         $return = [];
-        $list = ['need_types', 'counties','medical_unit_types','change_types','user_role_types','request_status_types','offer_status_types','delivery_status_types'];
+        $list = ['need_types','counties','medical_unit_types','change_types','user_role_types','request_status_types','offer_status_types','delivery_status_types','delivery_plan_status_types'];
         foreach($list as $metadataType) {
             $return[$metadataType] = Metadata::getSorted($metadataType, 'label')->all();
         }
@@ -66,6 +66,7 @@ class MetadataController extends Controller
             case 'request_status_types': $type .= 'MetadataRequestStatusType'; break;
             case 'offer_status_types': $type .= 'MetadataOfferStatusType'; break;
             case 'delivery_status_types': $type .= 'MetadataDeliveryStatusType'; break;
+            case 'delivery_plan_status_types': $type .= 'MetadataDeliveryPlanStatusType'; break;
             default: return ['success'=>false, 'error'=>'Metadata type not recognized']; break;
         }
 
@@ -86,6 +87,10 @@ class MetadataController extends Controller
             $t->slug = $request->post('slug');
         }
 
+        if($request->post('sort_order') !== null) {
+            $t->sort_order = (int)$request->post('sort_order');
+        }
+
         if($t->save()) {
             return [
                 'success'=>true,
@@ -94,7 +99,8 @@ class MetadataController extends Controller
                     'new_item'=> [
                         'id'=>$t->id,
                         'label'=>$t->label,
-                        'slug'=>$t->slug
+                        'slug'=>$t->slug,
+                        'sort_order'=>$t->sort_order
                     ]
                 ]
             ];
@@ -105,8 +111,9 @@ class MetadataController extends Controller
 
     public function delete(Request $request, $type, $id) {
 
-        echo $id;
-        echo json_encode($request->post());
+        // id = id to delete
+        // request->post('merge_into_id') - new relation for all related models
+        return Metadata::mergeIntoAndDelete($type, $id, $request->post('merge_into_id'));
 
     }
 

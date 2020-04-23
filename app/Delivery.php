@@ -3,12 +3,14 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Delivery extends Model
 {
+    use SoftDeletes;
 
     protected $with = ['needs'];
-    protected $fillable = [
+    public $fillable = [
         'sender_name', 
         'sender_contact_name', 
         'sender_phone_number', 
@@ -29,8 +31,7 @@ class Delivery extends Model
         'delivery_sponsor_id'
     ];
 
-
-    public function syncNeeds($needs) {
+    public function syncNeeds($needs, $execute=false) {
         
         $existingNeeds = collect($this->needs)->keyBy('need_type_id');
         $newNeeds = collect($needs)->keyBy('need_type_id');
@@ -38,15 +39,24 @@ class Delivery extends Model
         $needsToDelete = $existingNeeds->diffKeys($newNeeds);
         $needsToCreateOrUpdate = $newNeeds->diffKeys($needsToDelete);
 
-        //delete
-        $this->needs()->whereIn('need_type_id', $needsToDelete->keys()->all())->delete();
+        if($execute) {
+            //delete
+            if($needsToDelete->count()>0) {
+                $this->needs()->whereIn('need_type_id', $needsToDelete->keys()->all())->delete();
+            }
 
-        foreach($needsToCreateOrUpdate as $n) {
-            $this->needs()->updateOrCreate(
-                [ 'need_type_id' => $n['need_type_id'] ],
-                [ 'quantity' => $n['quantity'] ]
-            );
-        }
+            foreach($needsToCreateOrUpdate as $n) {
+                $this->needs()->updateOrCreate(
+                    [ 'need_type_id' => $n['need_type_id'] ],
+                    [ 'quantity' => $n['quantity'] ]
+                );
+            }
+        } 
+        
+        return [
+            'to_delete' => $needsToDelete,
+            'to_create_or_update' => $needsToCreateOrUpdate
+        ];
 
     }
 

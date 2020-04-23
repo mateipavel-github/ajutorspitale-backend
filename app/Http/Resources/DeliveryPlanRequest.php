@@ -16,7 +16,11 @@ class DeliveryPlanRequest extends JsonResource
     {
         $data = parent::toArray($request);
         $data['delivery'] = $data['pivot']['delivery'];
-        $data['pivot']['delivery'] = '!!! moved from DeliveryPlanRequest resource to $item[\'delivery\'] !!!';
+        $data['position'] = $data['pivot']['position'];
+        $data['priority_group'] = $data['pivot']['priority_group'];
+        $data['pivot']['delivery'] = '!!! moved to $item[\'delivery\'] using DeliveryPlanRequest resource !!!';
+        $data['pivot']['position'] = '!!! moved to $item[\'delivery\'] using DeliveryPlanRequest resource !!!';
+        $data['pivot']['priority_group'] = '!!! moved to $item[\'delivery\'] using DeliveryPlanRequest resource !!!';
         return $data;
     }
 }

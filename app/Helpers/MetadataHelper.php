@@ -9,6 +9,7 @@ use App\MetadataUserRoleType;
 use App\MetadataNeedType;
 use App\MetadataOfferStatusType;
 use App\MetadataDeliveryStatusType;
+use App\MetadataDeliveryPlanStatusType;
 
 class MetadataHelper {
 
@@ -66,12 +67,32 @@ class MetadataHelper {
     public function getCountyById($id) {
         return $this->_getById('counties', $id);
     }
+    public function getDeliveryStatusById($id) {
+        return $this->_getById('delivery_status_types', $id);
+    }
+    
+
+    public function mergeIntoAndDelete($type, $idToDelete, $idToMergeInto) {
+        switch($type) {
+            case 'medical_unit_types':
+                //medical_units, offers, requests
+                \App\MedicalUnit::where('medical_unit_type_id', $idToDelete)->update(['medical_unit_type_id' => $idToMergeInto]);
+                \App\HelpRequest::where('medical_unit_type_id', $idToDelete)->update(['medical_unit_type_id' => $idToMergeInto]);
+                MetadataMedicalUnitType::find($idToDelete)->delete();
+                return ['success'=>true];
+                break;
+            default:
+                return ['success'=>false, 'error'=>'Delete "'.$type.'" not implemented'];
+                break;
+        }
+    }
 
     private function _getById($metadataType, $id) {
         // todo implement caching 
         $return = $this->$metadataType->firstWhere('id', $id);
         if($return === null) {
-            echo $metadataType.' ['.$id.'] not found';
+            $return = new \stdClass(); 
+            $return -> label = $metadataType.' not found';
         }
         return $return;
     }
@@ -93,6 +114,9 @@ class MetadataHelper {
             case 'delivery_status_types': 
                 return MetadataDeliveryStatusType::all();
             break;
+            case 'delivery_plan_status_types':
+                return MetadataDeliveryPlanStatusType::all();
+                break;
             case 'counties': 
                 return MetadataCounty::all();
                 break;

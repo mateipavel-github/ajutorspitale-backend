@@ -81,6 +81,13 @@ class PostingController extends Controller
             $this->per_page = $request->get('per_page');
         }
 
+        if($excludeIds = $request->get('exclude_ids')) {
+            if(!is_array($excludeIds)) {
+                $excludeIds = explode(',', $excludeIds);
+            }
+            $list->whereNotIn('id', $excludeIds);
+        }
+
         if($needs = $request->get('needs')) {
             $needs = explode(',', $needs);
             $changeItemType = $this->model;
@@ -181,10 +188,18 @@ class PostingController extends Controller
 
         if($this->postingType==='offer') {
             $list->with('counties');
+            $list->with('delivery_plans');
         }
 
         if ($request->get("per_page")) {
             $this->per_page = $request->get('per_page');
+        }
+
+        if($excludeIds = $request->get('exclude_ids')) {
+            if(!is_array($excludeIds)) {
+                $excludeIds = explode(',', $excludeIds);
+            }
+            $list->whereNotIn('id', $excludeIds);
         }
 
         if ($request->get("user_id")) {
@@ -402,7 +417,6 @@ class PostingController extends Controller
             $needsToAdd = $data['needs'];
         }
         
-        // @frontTodo set change_data separately into a FormGroup
         //create new change
         $pc = new PostingChange;
         $pc->user_id = $request->user('api') ? $request->user('api')->id : null;

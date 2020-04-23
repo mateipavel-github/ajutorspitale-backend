@@ -6,6 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
 use App\Observers\PostingChangeObserver; 
 use App\PostingChange;
+use DB;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -39,5 +40,22 @@ class AppServiceProvider extends ServiceProvider
 
         PostingChange::observe(PostingChangeObserver::class);
 
+        DB::listen(function ($query) {
+            if(isset($_SESSION['log_sql'])) {
+
+                $_SESSION['log_sql']['queries'][] = [
+                    'query' => $query->sql,
+                    'bindings' => $query->bindings
+                ];
+                $_SESSION['log_sql']['time'] += $query->time;
+
+                $log = "QUERY LOG: \n" .$query->sql;
+                if(count($query->bindings)>0) {
+                    $log .= "\nBINDINGS: ".implode(',', $query->bindings);
+                }
+                $log .= "\nTIME: ". $query->time ."\n\n-----------------------------------------------\n\n";
+                \Log::info($log);
+            }
+        });
     }
 }

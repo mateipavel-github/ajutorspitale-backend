@@ -6,6 +6,10 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 use App\Delivery;
+use App\DeliveryPlanHelpRequest;
+use App\HelpRequest;
+use App\PostingChange;
+
 use App\Note;
 use Metadata;
 
@@ -112,17 +116,8 @@ class DeliveryController extends Controller
     {
     
         $d = new Delivery;
-        $mappings = [
-            'name' => 'contact_name',
-            'description' => 'description',
-            'phone_number' => 'contact_phone_number',
-            'address' => 'destination_address',
-            'county_id' => 'county_id',
-            'medical_unit_id' => 'destination_medical_unit_id'
-        ];
-
-        foreach($mappings as $post_key=>$key) {
-            $d->$key = $request->post($post_key);
+        foreach($d->fillable as $key) {
+            $d->$key = $request->post($key);
         }
 
         if($request->post('main_sponsor')) {
@@ -136,17 +131,10 @@ class DeliveryController extends Controller
 
         $d->save();
 
-        if($request->post('requests')) {
-            $requests = collect($request->post('requests'))->pluck('id');
-            $d->delivery_requests()->attach($requests);
+        if($request->post('needs')) {
+            $d->syncNeeds($request->post('needs'));
         }
 
-        if($request->post('needs')) {
-            $needs = $request->post('needs');
-            array_map(function($need) use ($d) {
-                    $d->needs()->updateOrCreate(['need_type_id'=>$need['need_type_id'], 'quantity'=>$need['quantity']]);
-            }, $needs);
-        }
         return response()->json([
             'success'=>true,
             'data' => [
@@ -189,19 +177,16 @@ class DeliveryController extends Controller
         
         $d = Delivery::find($id);
 
-        $mappings = [
-            'name' => 'contact_name',
-            'phone_number' => 'contact_phone_number',
-            'description' => 'description',
-            'address' => 'destination_address',
-            'county_id' => 'county_id',
-            'medical_unit_id' => 'destination_medical_unit_id',
-            'status' => 'status'
-        ];
+        foreach($d->fillable as $key) {
+            if($request->post($key)!==null) {
+                $d->$key = $request->post($key);
+            }
+        }
 
-        foreach($mappings as $post_key=>$key) {
-            if($request->post($post_key)) {
-                $d->$key = $request->post($post_key);
+        if($request->post('status')) {
+            $d->status = $request->post('status');
+            if($d->getOriginal('status') !== $d->status) {
+                $ok = $this->statusChange($id, $d->getOriginal('status'), $d->status);
             }
         }
 
@@ -212,31 +197,68 @@ class DeliveryController extends Controller
             $d->delivery_sponsor_id = $request->post('delivery_sponsor')['id'];
         } 
 
+        $d->user_id = $request->user('api')->id;
+
         $d->save();
 
-        if($request->post('requests')) {
-            $requests = array_unique(collect($request->post('requests'))->pluck('id')->toArray());
-            $d->requests()->sync($requests);
-        }
-
         if($request->post('needs')) {
-            $existingNeedsByRelationshipId = $d->needs()->pluck('id')->toArray();
-            $postedNeedsByRelationshipId = array_unique(collect($request->post('needs'))->pluck('id')->toArray());
-            $needsToDelete = array_diff($existingNeedsByRelationshipId, $postedNeedsByRelationshipId);
-            $d->needs()->whereIn('id', $needsToDelete)->delete();
-
-            $needs = $request->post('needs');
-            array_map(function($need) use ($d) {
-                $d->needs()->updateOrCreate(['need_type_id'=>$need['need_type_id'], 'quantity'=>$need['quantity']]);
-            }, $needs);
+            $d->syncNeeds($request->post('needs'));
         }
 
         return response()->json([
             'success'=>true,
             'data' => [
-                'item' => Delivery::with(['requests', 'notes', 'needs', 'owner', 'main_sponsor','delivery_sponsor','medical_unit'])->find($d->id)
+                'ok' => isset($ok) ? $ok : false,
+                'item' => Delivery::with(['notes', 'needs', 'owner', 'main_sponsor','delivery_sponsor','medical_unit'])->find($d->id)
             ]
         ]);
+
+    }
+
+    public function statusChange($id, $oldStatus, $newStatus) {
+
+        if($newStatus === Metadata::getDeliveryStatusIdFromSlug('delivered') || $oldStatus === Metadata::getDeliveryStatusIdFromSlug('delivered')) {
+            
+            $delivery = Delivery::with('needs')->find($id);
+
+            $comment = 'Livrarea #'. $id.' cu statusul "'.Metadata::getDeliveryStatusById($oldStatus)->slug.'" a fost marcată ca "'.Metadata::getDeliveryStatusById($newStatus)->slug.'"';
+            $multiplier = 1;
+            if($newStatus === Metadata::getDeliveryStatusIdFromSlug('delivered')) {
+                $multiplier = -1;
+            }
+            
+            // find requests
+            $aux = DeliveryPlanHelpRequest::where('item_type', get_class(new HelpRequest()))
+                            ->where('delivery_id', $id)->get();
+            $requests = $aux->pluck('item_id')->all();
+
+            foreach($requests as $rId) {
+
+                $request = HelpRequest::find($rId);
+                
+                $currentNeeds = collect($request->current_needs)->keyBy('need_type_id');
+
+                $pc = new PostingChange;
+                $pc->user_id = request()->user('api') ? request()->user('api')->id : null;
+                $pc->change_type_id = Metadata::getChangeTypeIdFromSlug('delivery');
+                $pc->delivery_id = $delivery->id;
+                $pc->user_comment = $comment;
+                $request->changes()->save($pc);
+
+                $needs = array_map(function($dn) use ($currentNeeds, $multiplier) {
+                    $cn = $currentNeeds->get($dn->need_type_id);
+                    $quantity = $cn ? min((int)$cn->quantity, (int)$dn->quantity) : 0;
+                    return [
+                        'need_type_id'=>$dn['need_type_id'], 
+                        'quantity'=>$multiplier * (int)$quantity
+                    ];
+                }, $delivery->needs->all());
+
+                $pc->needs()->createMany($needs);
+            }
+
+        }
+
 
     }
 

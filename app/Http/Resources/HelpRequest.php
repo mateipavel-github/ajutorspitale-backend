@@ -21,6 +21,7 @@ class HelpRequest extends JsonResource
             'name'=> $this -> name,
             'phone_number' => $this -> phone_number,
             'created_at' => $this -> created_at,
+            'updated_at' => $this -> updated_at,
             'job_title' => $this -> job_title,
             'medical_unit_id' => $this -> medical_unit_id,
             'medical_unit' => $this -> medical_unit,

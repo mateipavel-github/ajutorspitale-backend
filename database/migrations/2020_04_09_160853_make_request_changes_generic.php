@@ -44,7 +44,7 @@ class MakeRequestChangesGeneric extends Migration
             $table->softDeletes();
             $table->integer('posting_change_id');
             $table->integer('need_type_id');
-            $table->string('quantity');
+            $table->integer('quantity');
         });
 
         $help_request_changes = DB::table('help_request_changes')->get()->toArray();
