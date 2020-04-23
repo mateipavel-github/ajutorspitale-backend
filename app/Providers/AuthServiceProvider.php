@@ -33,7 +33,7 @@ class AuthServiceProvider extends ServiceProvider
 
         $rolesTable = (new MetadataUserRoleType())->getTable();
     
-        if (Schema::hasTable($rolesTable) && Schema::hasColumn($rolesTable, 'slug')) {
+        if (Schema::hasTable($rolesTable) && Schema::hasColumn($rolesTable, 'scopes')) {
             $scopes = array_unique(explode(',', implode(',', DB::table($rolesTable)->select('scopes')->pluck('scopes')->all())));      
             
             if (!empty($scopes)) {
