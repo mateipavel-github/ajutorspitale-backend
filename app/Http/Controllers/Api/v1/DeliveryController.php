@@ -177,16 +177,16 @@ class DeliveryController extends Controller
         
         $d = Delivery::find($id);
 
+        if($request->post('status')) {
+            if($d->status !== $request->post('status')) {
+                $ok = $this->statusChange($id, $d->status, $request->post('status'));
+            }
+            $d->status=$request->post('status');
+        }
+
         foreach($d->fillable as $key) {
             if($request->post($key)!==null) {
                 $d->$key = $request->post($key);
-            }
-        }
-
-        if($request->post('status')) {
-            $d->status = $request->post('status');
-            if($d->getOriginal('status') !== $d->status) {
-                $ok = $this->statusChange($id, $d->getOriginal('status'), $d->status);
             }
         }
 
@@ -217,19 +217,28 @@ class DeliveryController extends Controller
 
     public function statusChange($id, $oldStatus, $newStatus) {
 
-        if($newStatus === Metadata::getDeliveryStatusIdFromSlug('delivered') || $oldStatus === Metadata::getDeliveryStatusIdFromSlug('delivered')) {
+        $metadataDeliveredStatusId = Metadata::getDeliveryStatusIdFromSlug('delivered');
+
+        \Log::info('Status change from '.$oldStatus.' to '.$newStatus);
+
+        if($newStatus === $metadataDeliveredStatusId || $oldStatus === $metadataDeliveredStatusId) {
             
             $delivery = Delivery::with('needs')->find($id);
 
-            $comment = 'Livrarea #'. $id.' cu statusul "'.Metadata::getDeliveryStatusById($oldStatus)->slug.'" a fost marcată ca "'.Metadata::getDeliveryStatusById($newStatus)->slug.'"';
-            $multiplier = 1;
-            if($newStatus === Metadata::getDeliveryStatusIdFromSlug('delivered')) {
-                $multiplier = -1;
-            }
+            $comment = 'Livrarea #'. $id.' cu statusul "'.(Metadata::getDeliveryStatusById($oldStatus)->label).'" a fost marcată ca "'.(Metadata::getDeliveryStatusById($newStatus)->label).'"';
             
+            $multiplier = 1;
+            if($newStatus === $metadataDeliveredStatusId) {
+                // this is a change FROM another status TO delivered
+                $multiplier = -1;
+            } else {
+                // this is a change FROM delivered TO another status
+            }
+        
+            \Log::info('Multiplier: ' . $multiplier);
+
             // find requests
-            $aux = DeliveryPlanHelpRequest::where('item_type', get_class(new HelpRequest()))
-                            ->where('delivery_id', $id)->get();
+            $aux = DeliveryPlanHelpRequest::where('item_type', get_class(new HelpRequest()))->where('delivery_id', $id)->get();
             $requests = $aux->pluck('item_id')->all();
 
             foreach($requests as $rId) {
@@ -237,6 +246,34 @@ class DeliveryController extends Controller
                 $request = HelpRequest::find($rId);
                 
                 $currentNeeds = collect($request->current_needs)->keyBy('need_type_id');
+                
+                if($multiplier === -1) {
+                    \Log::info('Am intrat prost');
+                    // subtract delivered quantities from current needs, but don't go below 0
+                    $needs = array_map(function($dn) use ($currentNeeds, $multiplier) {
+                        $cn = $currentNeeds->get($dn->need_type_id);
+                        // required so you don't go below 0 if you deliver more than the current_needs
+                        $quantity = $cn ? min((int)$cn->quantity, (int)$dn->quantity) : 0;
+                        return [
+                            'need_type_id'=>$dn['need_type_id'], 
+                            'quantity'=>$multiplier * (int)$quantity
+                        ];
+                    }, $delivery->needs->all());
+                } else {
+                    // add back previously delivered quantities
+                    $_SESSION['log_sql'] = ['queries'=>[],'time'=>0];
+                    
+                    $previousChange = $request->changes()->where('delivery_id', $id)->orderBy('id', 'desc')->first();
+                    $deliveredNeeds = $previousChange->needs->keyBy('need_type_id');
+                    \Log::info('Nevoi livrate');
+                    \Log::info($deliveredNeeds);
+                    $needs = array_map(function($dn) {
+                        return [
+                            'need_type_id'=>$dn->need_type_id, 
+                            'quantity'=> -1 * $dn->quantity //$quantity would be negative so we multiply by -1 to get it back to positive
+                        ];
+                    }, $deliveredNeeds->all());
+                }
 
                 $pc = new PostingChange;
                 $pc->user_id = request()->user('api') ? request()->user('api')->id : null;
@@ -244,16 +281,6 @@ class DeliveryController extends Controller
                 $pc->delivery_id = $delivery->id;
                 $pc->user_comment = $comment;
                 $request->changes()->save($pc);
-
-                $needs = array_map(function($dn) use ($currentNeeds, $multiplier) {
-                    $cn = $currentNeeds->get($dn->need_type_id);
-                    $quantity = $cn ? min((int)$cn->quantity, (int)$dn->quantity) : 0;
-                    return [
-                        'need_type_id'=>$dn['need_type_id'], 
-                        'quantity'=>$multiplier * (int)$quantity
-                    ];
-                }, $delivery->needs->all());
-
                 $pc->needs()->createMany($needs);
             }
 

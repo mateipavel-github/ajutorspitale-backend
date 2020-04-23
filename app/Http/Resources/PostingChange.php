@@ -22,6 +22,7 @@ class PostingChange extends JsonResource
             'change_type_id' => $this -> change_type_id,
             'status' => $this -> status,
             'user_id' => $this -> user_id,
+            'user_comment' => $this -> user_comment,
             'user' => new UserResource($this->whenLoaded('user')),
             'created_at' => $this -> created_at
         ];
